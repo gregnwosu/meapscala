@@ -1,0 +1,15 @@
+#+DATE: [2014-04-27 Sun 16:58]
+#+OPTIONS: toc:nil num:nil todo:nil pri:nil tags:nil ^:nil TeX:nil
+#+CATEGORY: neural networks, haskell, concurrency, functional programming
+#+TAGS:
+#+DESCRIPTION:
+#+TITLE: Meap Scala Notes
+
+
+* Scala
+** syntax 
+*** functional traits
+- interfaces for functions
+- the function apply means that a function object can be called implicitly
+- square brackets with capitals signify generics/polymorphic functions
+
