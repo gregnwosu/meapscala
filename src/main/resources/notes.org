@@ -100,3 +100,27 @@ g(a) (b)
 **** foldRight
 - replaces cons with f and Nil with its intialiser
 - foldRight must traverse all the way to the end of the list (pushing frames onto the call stack as we go) before it can begin collapsing it
+
+
+#+BEGIN_SRC scala 
+def foldRight[A,B](as: List[A], z: B)(f: (A, B) => B): B =
+as match {
+case Nil => z
+case Cons(x, xs) => f(x, foldRight(xs, z)(f))
+}
+
+#+END_SRC
+**** foldLeft
+- pretty much sampe as fold right
+- but moves computation inside recurusion 
+  - forcing early evaluation
+  - use initialiser as an accumulator
+#+BEGIN_SRC scala
+def foldLeft[A,B](l: List[A], z: B)(f: (B, A) => B): B = 
+l match {
+  case Nil => z
+  case Cons(x,xs) => foldLeft( xs, f(z, x)) (f)
+  
+}
+
+#+END_SRC
