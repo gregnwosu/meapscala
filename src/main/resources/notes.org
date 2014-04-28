@@ -86,3 +86,17 @@ case Cons(x,xs) => x + sum(xs)
 - need the ints for the match clause 
       -called the [target] or [scrutinee]
 - case statements
+
+****** currying							      :drill:
+- is done by sepearting out curried terms using [brackets]
+- apparently currying makes type infrerence work better
+#+BEGIN_SRC scala
+call curried items via
+g(a) (b)
+
+#+END_SRC
+
+
+**** foldRight
+- replaces cons with f and Nil with its intialiser
+- foldRight must traverse all the way to the end of the list (pushing frames onto the call stack as we go) before it can begin collapsing it
