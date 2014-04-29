@@ -112,6 +112,8 @@ case Cons(x, xs) => f(x, foldRight(xs, z)(f))
 #+END_SRC
 **** foldLeft
 - pretty much sampe as fold right
+- word on the street is that foldl is broken
+  - foldl is broken! http://bit.ly/PdqGMB a
 - but moves computation inside recurusion 
   - forcing early evaluation
   - use initialiser as an accumulator
@@ -122,5 +124,32 @@ l match {
   case Cons(x,xs) => foldLeft( xs, f(z, x)) (f)
   
 }
-
 #+END_SRC
+
+
+*** algebraeic data types
+
+**** definition
+- a datatype with one or more constructors
+- a type is the sum of its construstors
+- each constructor is the product of its arguments
+*** notes on exercises
+**** Exercise 23						      :drill:
+was unable to define addlists in terms of map foldmap
+perhaps there is another way?
+#+BEGIN_SRC scala
+def addLists(a:List[Int], b:List[Int]): List[Int] = a match { 
+  case Nil => b
+  case Cons(x,xs) => Cons(x+ head(b), addLists(xs, tail(b)))
+}
+#+END_SRC
+
+***** TODO The Answer
+
+**** Exercise 24						      :drill:
+compiler cant find scanRight
+#+BEGIN_SRC scala
+def hasSubsequence[A](l: List[A], sub: List[A]): Boolean  =  scanRight (l,Nil:List[A])  ((a:A, b:List[B]) => Cons(a,b)) exists ((c:List[A]) => c == l)
+#+END_SRC
+
+**** TODO The Answer
