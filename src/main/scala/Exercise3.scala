@@ -1,7 +1,7 @@
 
 object Hello{
  
- def main(args: Array[String]) :Unit  = {
+ def oldmain(args: Array[String]) :Unit  = {
    println("Hello World")
    println("this is a test")
    println(List(1,2,3,4) )
@@ -96,7 +96,7 @@ def size[A](t:Tree[A]):Int = t match {
 
 def max(a:Int, b:Int) : Int = if (a > b) a else b
 
-def maximum[Int](t:Tree[Int]): Int = t match {
+/*def maximum[Int](t:Tree[Int]): Int = t match {
   case Leaf(v)     =>  v
   case Branch(l,r) =>  maximum(l) max maximum(r)
 }
@@ -104,7 +104,7 @@ def maximum[Int](t:Tree[Int]): Int = t match {
 def maxdepth[Int](t:Tree[Int]):Int = t match {
   case Leaf(v)     =>  1
   case Branch(l,r) =>  (1 + maxdepth(l)) max (1 + maxdepth(r))
-}
+}*/
 
 def mapTree[A,B](t:Tree[A], f: A => B):Tree[B] = t match {
   case Leaf(v)     => Leaf (f(v))
@@ -113,7 +113,7 @@ def mapTree[A,B](t:Tree[A], f: A => B):Tree[B] = t match {
 
 
 def foldTree[A,B](a:Tree[A], b:B) ( f : (A,B) => B):B = a match {
-case Leaf(v) => f (v,b )
+case Leaf(v) => f (v,b)
 case Branch(l, r) => foldTree(r, (foldTree(l, b) (f))) (f)
 }
 

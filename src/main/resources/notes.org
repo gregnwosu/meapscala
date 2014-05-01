@@ -9,15 +9,16 @@
 
 
 * Scala
-** github
+** Chapter 3
+*** github
 https://github.com/gregnwosu/meapscala
-** syntax 
-*** functional traits						      :drill:
+*** syntax 
+**** functional traits						      :drill:
 - interfaces for functions
 - we introduce data types with [traits]
-**** sealed trait
+***** sealed trait
 - sealed means that all implentations must be in this file, kinda the same as [dinal]
-***  other syntax quirks					      :drill:
+****  other syntax quirks					      :drill:
 - each anonymous function has a implicit [apply] method that exposes the interface or [trait] of the function
 - the function apply means that a function object can be called implicitly
 - square brackets with capitals signify [generics]/[polymorphic] functions
@@ -29,14 +30,14 @@ def uncurry[A,B,C](f: A => B=> C): (A,B)=>C =
 (a:A,b:B) => f (a) (b)
 #+END_SRC
 
-*** data constructors						      :drill:
+**** data constructors						      :drill:
 - varying forms use the case statement
   - think overloading constructors
 - are made by [extend]ing the trait
 - each data constructor introduces a pattern
-*** collections
+**** collections
 
-**** lists
+***** lists
 - lists can be made [polymorphic] with square brackets
 - adding a + makes the list [covariant]
 - We defined Nil to extend List[Nothing]
@@ -44,7 +45,7 @@ def uncurry[A,B,C](f: A => B=> C): (A,B)=>C =
   - Therefore because list is covarient
     - Nil has a type [List[A]] for any A
    
-*****  Variadic functions 					      :drill:
+******  Variadic functions					      :drill:
 what does _* mean? 
 #+BEGIN_SRC scala
 //recursively applies cons
@@ -54,23 +55,23 @@ def apply[A](as: A*): List[A] =
 }
 #+END_SRC
 
-****** The Answer
+******* The Answer
 - * is just syntatic sugar for a Seq which are lists or array like structures passed around instead of variable arguments
 - as is bound to Seq[A] http://mng.bz/f4k9
 - _~* allows us to pass a Seq to a varargs method,
   - a bit like pythonic **
-***** covariance
+****** covariance
 - generally if X is a subtype of Y then 
   - List[X] is a subtupe of List[Y]
 
-***** companion objects
+****** companion objects
 - has the same [name] as our data type
 - also has [convience] functions
-**** constructor quirks 					      :drill:
+***** constructor quirks					      :drill:
 why is Nil defined with object a and list defined via class
-***** TODO The Answer
+****** TODO The Answer
 
-**** pattern matching
+***** pattern matching
 - _ matches any value
 #+BEGIN_SRC scala
 
@@ -82,12 +83,12 @@ case Cons(x,xs) => x + sum(xs)
 #+END_SRC
 
 
-***** syntatical quirks						      :drill:
+****** syntatical quirks					      :drill:
 - need the ints for the match clause 
       -called the [target] or [scrutinee]
 - case statements
 
-****** currying							      :drill:
+******* currying						      :drill:
 - is done by sepearting out curried terms using [brackets]
 - apparently currying makes type infrerence work better
 #+BEGIN_SRC scala
@@ -97,7 +98,7 @@ g(a) (b)
 #+END_SRC
 
 
-**** foldRight
+***** foldRight
 - replaces cons with f and Nil with its intialiser
 - foldRight must traverse all the way to the end of the list (pushing frames onto the call stack as we go) before it can begin collapsing it
 
@@ -110,7 +111,7 @@ case Cons(x, xs) => f(x, foldRight(xs, z)(f))
 }
 
 #+END_SRC
-**** foldLeft
+***** foldLeft
 - pretty much sampe as fold right
 - word on the street is that foldl is broken
   - foldl is broken! http://bit.ly/PdqGMB a
@@ -127,14 +128,15 @@ l match {
 #+END_SRC
 
 
-*** algebraeic data types
+**** algebraeic data types
 
-**** definition
+***** definition
 - a datatype with one or more constructors
 - a type is the sum of its construstors
 - each constructor is the product of its arguments
-*** notes on exercises
-**** Exercise 23						      :drill:
+
+**** notes on exercises
+***** Exercise 23						      :drill:
 was unable to define addlists in terms of map foldmap
 perhaps there is another way?
 #+BEGIN_SRC scala
@@ -144,12 +146,106 @@ def addLists(a:List[Int], b:List[Int]): List[Int] = a match {
 }
 #+END_SRC
 
-***** TODO The Answer
+****** TODO The Answer
 
-**** Exercise 24						      :drill:
+***** Exercise 24						      :drill:
 compiler cant find scanRight
 #+BEGIN_SRC scala
 def hasSubsequence[A](l: List[A], sub: List[A]): Boolean  =  scanRight (l,Nil:List[A])  ((a:A, b:List[B]) => Cons(a,b)) exists ((c:List[A]) => c == l)
 #+END_SRC
 
-**** TODO The Answer
+***** TODO The Answer
+** Chapter 4
+
+
+
+*** Exceptions
+
+- Exceptions are context dependent
+  - depending on level of block .i,e, where they run they can result in different values
+  - therefore are not RT
+- Exceptions are not type safe
+ - can be assigned to anytype
+**** The general rule of thumb					      :drill:
+- we use exceptions only if no reasonable program would ever [catch the exception]
+— if for some callers the exception might be a recoverable error, we use [Option or Either]
+***** why not just fail? 					      :drill:
+****** TODO The Answer
+
+
+
+*** Lifting and Mapping						      :drill:
+Between map , lift , sequence , traverse , map2 , map3 , and so on, you
+should never have to modify any existing functions to work with optional values.
+**** map2
+a function a function that takes two normal arguments to two functors
+
+***** straight implementation
+#+BEGIN_SRC scala
+def map2[A,B,C](a: Option[A], b: Option[B])(f: (A, B) => C):
+Option[C] =
+a flatMap (aa =>
+b map (bb =>
+f(aa, bb)))
+#+END_SRC
+- love this nested implementation 
+  - we unwrap functors by using map
+  - we use flatmap on the outside to combine the nested functors correctly
+  - in the inner sanctum we apply map to the naked objects
+
+
+***** forM implementation
+#+BEGIN_SRC scala
+def map2[A,B,C](a: Option[A], b: Option[B])(f: (A, B) => C):
+Option[C] =
+for {
+aa <- a
+bb <- b
+} yield f(aa, bb)
+
+- pretty much the same as haskells do syntax
+- recombining is implied
+- yield is the same as return
+
+#+END_SRC
+
+**** in general
+- We can lift functions to combine Functor behaviour
+- flatMap can be used to [combine] two Functors
+  - monadic bind
+- sequence is used to return monadic None if any element is None
+- traverse is more powerful than sequence and is used to map a function over a list which returns a functor and then check for None
+
+
+
+
+
+****  question about person implementation page 76		      :drill:
+
+#+BEGIN_SRC scala 
+case class Person(name: Name, age: Age)
+sealed class Name(val value: String)
+sealed class Age(val value: Int)
+
+def mkName(name: String): Either[String, Name] =
+if (name == "" || name == null) Left("Name is empty.")
+else Right(new Name(name))
+
+def mkAge(age: Int): Either[String, Age] =
+if (age < 0) Left("Age is out of range.")
+else Right(new Age(age))
+
+def mkPerson(name: String, age: Int): Either[String, Person] =
+mkName(name).map2(mkAge(age))(Person(_, _))
+#+END_SRC
+
+- thus far map2 isnt defined as partially applied , can we really use it here
+- is it just that partially applied functions help with types?
+
+**** sequence can be defined in terms of traverse
+- the main point is that the function is the identity function 
+- (x => x)
+#+BEGIN_SRC scala 
+def sequence   [A](a: List[Option[A]]): Option[List[A]] = 
+traverse (a)(x => x)
+#+END_SRC
