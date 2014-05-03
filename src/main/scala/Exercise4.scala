@@ -114,7 +114,7 @@ else
 
 def lift[A,B](f: A => B): Option[A] => Option[B] = _ map f
 
-  def main(args: Array[String]) :Unit  = {
+  def mainold(args: Array[String]) :Unit  = {
     println(variance(Seq(2.0,4.0,6.0,8.0) ))
     println(sequenceold(List(Some(2),Some(4)) ))
     println(sequence   (List(Some(2),Some(4)) ))

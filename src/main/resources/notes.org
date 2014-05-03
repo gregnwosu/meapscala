@@ -8,7 +8,10 @@
 #+TITLE: Meap Scala Notes
 
 
-* Scala
+* MEAP Scala
+  :PROPERTIES:
+  :ID:       o2b:ddb66efa-b325-4d09-85e2-c97b4239956c
+  :END:
 ** Chapter 3
 *** github
 https://github.com/gregnwosu/meapscala
@@ -156,9 +159,6 @@ def hasSubsequence[A](l: List[A], sub: List[A]): Boolean  =  scanRight (l,Nil:Li
 
 ***** TODO The Answer
 ** Chapter 4
-
-
-
 *** Exceptions
 
 - Exceptions are context dependent
@@ -172,7 +172,10 @@ def hasSubsequence[A](l: List[A], sub: List[A]): Boolean  =  scanRight (l,Nil:Li
 ***** why not just fail? 					      :drill:
 ****** TODO The Answer
 
-
+*** SUMMARY
+the bigger idea is that
+we can represent exceptions as ordinary values and use higher-order functions to
+encapsulate common patterns of handling and propagating errors.
 
 *** Lifting and Mapping						      :drill:
 Between map , lift , sequence , traverse , map2 , map3 , and so on, you
@@ -249,3 +252,71 @@ mkName(name).map2(mkAge(age))(Person(_, _))
 def sequence   [A](a: List[Option[A]]): Option[List[A]] = 
 traverse (a)(x => x)
 #+END_SRC
+** Chapter 5
+*** Formal definition of strictness
+~verbatim~
+If the evaluation of an expression runs forever or throws an error
+instead of returning a definite value, we say that the expression doesn't
+terminate , or that it evaluates to bottom . A function f is strict if the
+expression f(x) evaluates to bottom for all x that evaluate to bottom.
+~verbatim~
+*** thunking
+- all functions in scala are strict the non strict thunking operators just wrap/delay
+evaluation by wrapping in a function
+- values are evaluated each time they are referenced in a function
+- we can also use the lazy keyword for making scala evaluate a function only once
+#+BEGIN_SRC scala
+def maybeTwice2(b: Boolean, i: => Int) = {
+   lazy val j = i
+    if (b) j+j else 0
+ }
+maybeTwice: (b: Boolean, i: => Int)Int
+
+#+END_SRC
+*** streaminmg
+#+BEGIN_SRC scala
+sealed trait Stream[+A]
+case object Empty extends Stream[Nothing]
+case class Cons[+A](h: () => A, t: () => Stream[A]) extends Stream[A]
+object Stream {
+def cons[A](hd: => A, tl: => Stream[A]): Stream[A] = {
+lazy val head = hd
+lazy val tail = tl
+Cons(() => head, () => tail)
+}
+def empty[A]: Stream[A] = Empty
+def apply[A](as: A*): Stream[A] =
+if (as.isEmpty) empty else cons(as.head, apply(as.tail: _*))
+}
+#+END_SRC
+
+**** notes on streaming 
+This type looks identical to our List type, except that the Cons data
+constructor takes explicit thunks (the () => A and () => Stream[A] )
+
+- A nonempty stream consists of a head and a tail, which are both non-strict. Due to
+technical limitations, these are thunks that must be explicitly forced, rather than
+by-name parameters. 
+- A "smart" constructor for creating a nonempty stream
+- We cache the head and tail as lazy values to avoid repeated evaluation.
+- A "smart" constructor for creating an empty stream of a particular type
+- A convenient variable-argument method for constructing a Stream from multiple
+
+**** smart constructors
+- ensure some additional invarianet
+- characterized by a lower case letter but otherwise has the same name of constructor
+#+BEGIN_SRC scala
+def cons[A](hd: => A, tl: => Stream[A]): Stream[A] = {
+lazy val head = hd
+lazy val tail = tl
+Cons(() => head, () => tail)
+}
+
+#+END_SRC
+here the lazy head is being thunked this ensures that once its out of the stream the work that it took to produce it isnt repeated
+
+
+
+
+    
+
