@@ -530,3 +530,14 @@ Footnote 8
 -based implementation does not. 
 - Preserving sharing is not something we usually rely on when programming with streams, since it is extremely delicate and not tracked by the types. For instance, sharing is destroyed when
 calling even xs.map(x => x) .
+*** hassubsequence implementation
+#+BEGIN_SRC scala
+def hasSubsequence[A](s: Stream[A]): Boolean =
+tails exists (_ startsWith s)
+#+END_SRC
+
+- runs in same number of steps as monolithic code
+- by uses laziness to drop exit bad routes early
+  - we can compose general functions
+  - while retaining effciency
+

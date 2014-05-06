@@ -50,6 +50,25 @@ sealed trait Stream[+A]  {
  
   def flatMap[B](f: A => Stream[B]): Stream[B] = foldRight (Empty:Stream[B]) ((a,b) => f(a) append( b))
 
+  def startsWith[A](s: Stream[A]):Boolean  = ( ((s,this)) match {
+    case (Empty,_) => true
+    case (_,Empty) => false
+    case (Cons(mh,mt), Cons(th,tt)) => mh() == th() && tt().startsWith(mt())
+  })
+
+
+  def tails: Stream[Stream[A]] = this match{
+    case Empty => Empty
+    case Cons(h,t) => cons(cons(h(),t()), t().tails)
+  }
+
+  def scanRight[B](s: =>B)(f:(A, => B) => B):Stream[B]
+  = this match{
+    case Empty => Stream(s)
+    case Cons(h,t) => cons( cons(h(),t()).foldRight(s)(f), t().scanRight(s)(f))
+  }
+
+
   def take(n:Int):Stream[A] = unfold ((n, this)) ( t => t match{
     case (_, Empty)     => None
     case (n, Cons(h,t)) => if (n<=0) None else Some((h(),(n-1,t())))
@@ -127,7 +146,11 @@ def main(args: Array[String]) :Unit  = {
     println(constant(3).take(6).toList)
     println(fibs().take(6).toList)
     println(Stream(1,2,3).append(Stream(4,5,6)).toList)
+    println(Stream(1,2,3).startsWith(Stream(1,4)))
+
     println( Stream(1,2,3).zipAll(Stream(4,5,6,7)).toList  )
+    println( (Stream(1,2,3).tails.toList) map ( _.toList) )
+    println (Stream(1,2,3).scanRight(0)(_ + _).toList)
   }
 
 }
