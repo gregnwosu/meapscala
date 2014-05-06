@@ -273,7 +273,8 @@ def maybeTwice2(b: Boolean, i: => Int) = {
 maybeTwice: (b: Boolean, i: => Int)Int
 
 #+END_SRC
-*** streaminmg
+*** streaminmg							      :drill:
+
 #+BEGIN_SRC scala
 sealed trait Stream[+A]
 case object Empty extends Stream[Nothing]
@@ -315,8 +316,217 @@ Cons(() => head, () => tail)
 #+END_SRC
 here the lazy head is being thunked this ensures that once its out of the stream the work that it took to produce it isnt repeated
 
+*** exercise 5.1
+
+- strangely to invoke toList here we dont use the brackets
+- no arg methods are invoked using no parentheses
+
+- not sure exactly how one references functions first class
+- reminder:()   is just shorthand for apply()
+- methods are not first class, you can convert method applications to functions seamlessly though
+- greg`: methods are mostly a jvm artifact ie every object on jvm has a set of methods associated with it
+#+BEGIN_SRC scala
+
+ def toList:List[A]  = this match {
+      case Empty => List()
+      case Cons(h,t) =>  h() :: t().toList
+    }
+
+#+END_SRC
 
 
+**** irc conversation 
+<greg`> can someone help me figure out why http://pastebin.com/vZUvm4V6 wont
+	compile?
+@@@jasonjckn (~jasonjckn@8.25.197.24) has joined channel #scala
+<wabash> Where is the compiler error?
+@@@ hzhao (~hzhao@66.162.159.254) has quit: Ping timeout: 265 seconds
+@@@ soheil (~soheil@c-67-169-92-85.hsd1.ca.comcast.net) has quit: Remote host
+    closed the connection
+@@@ Osum (~radu@cpe-142-105-6-85.nyc.res.rr.com) has joined channel #scala
+@@@ soheil (~soheil@c-67-169-92-85.hsd1.ca.comcast.net) has joined channel
+    #scala  [22:53]
+@@@ Sgeo (~quassel@ool-44c2df0c.dyn.optonline.net) has joined channel #scala
+@@@ fizbin (~Adium@pool-96-235-146-249.cmdnnj.east.verizon.net) has quit:
+    Quit: Leaving.
+@@@ dustin10 (~dustin@2605:6000:0:8::f:9) has quit: Quit: WeeChat 0.4.3
+@@@ jmvanel (~jmvanel@175.0.88.79.rev.sfr.net) has quit: Ping timeout: 258
+    seconds
+@@@ joneshf-laptop (~joneshf@98.255.30.38) has joined channel #scala
+@@@ stantonk (~stantonk@208.185.170.2) has quit: Remote host closed the
+    connection
+@@@ fragamus (~textual@ip-64-134-220-53.public.wayport.net) has joined channel
+    #scala  [22:54]
+<greg`> ok ill make a new paste with the error in 
+@@@ stantonk (~stantonk@208.185.170.2) has joined channel #scala  [22:55]
+@@@ bgilbert (~textual@222.sub-70-193-135.myvzw.com) has joined channel #scala
+<greg`> two secs
+<wabash> NO MORE SEX
+@@@ stantonk (~stantonk@208.185.170.2) has quit: Remote host closed the
+    connection  [22:56]
+@@@ jasonjckn (~jasonjckn@8.25.197.24) has quit: Ping timeout: 264 seconds
+<greg`> http://pastebin.com/C47SrZiY  [22:58]
+<greg`> that has the compiler error in it also
+<greg`> its annoying
+@@@ mary5030 (~mary5030@72.32.115.233) has quit: Remote host closed the
+    connection
+<greg`> slightly different than the first in that im using :: for Cons in the
+	second  [22:59]
+@@@ bgilbert (~textual@222.sub-70-193-135.myvzw.com) has quit: Ping timeout:
+    240 seconds
+@@@ kiviuq (~mo@aftr-37-24-151-62.unity-media.net) has joined channel #scala
+@@@ SparkySparkyBoom (~sparky@gateway/tor-sasl/nyx114) has quit: Write error:
+    Broken pipe  [23:00]
+@@@ SparkySparkyBoom (~sparky@gateway/tor-sasl/nyx114) has joined channel
+    #scala
+@@@ alexyk (~alexyk@50-204-120-254-static.hfc.comcastbusiness.net) has quit:
+    Quit: alexyk  [23:01]
+<OlegYch> greg`: toList accepts no argument lists
+@@@ jasonjckn (~jasonjckn@8.25.197.24) has joined channel #scala
+<OlegYch> when you pass () to it you're passing an empty argument list to the
+	  result of toList
+<wabash> OlegYch: So I'm new to scala as well .In the statement:
+	 t().toList(), "toList" is a function, correct?  [23:02]
+@@@ robbyoconnor (~wakawaka@guifications/user/r0bby) has joined channel #scala
+								        [23:03]
+@@@ mizu_no_oto (~textual@c-76-24-18-193.hsd1.ma.comcast.net) has joined
+    channel #scala
+<OlegYch> no it's a method
+<wabash> ok, on the object returned by t()?
+@@@ stantonk (~stantonk@208.185.170.2) has joined channel #scala
+<OlegYch> right, a method call on object returned by t()  [23:04]
+<wabash> ok, cool.
+<greg`> this is exercise 1 from chapter 5 of manning functional programming in
+	scala
+@@@ fragamus (~textual@ip-64-134-220-53.public.wayport.net) has quit: Quit:
+    Computer has gone to sleep.
+<wabash> and then toList() is calling the method named toList?
+@@@ ever (~ever@ipservice-092-211-034-155.pools.arcor-ip.net) has quit: Ping
+    timeout: 240 seconds
+@@@ _unary_ (~unary@68.67.54.218) has quit: Ping timeout: 245 seconds  [23:05]
+<OlegYch> yes, and then calling an apply(whatever) method on its result
+<wabash> Where does the apply method come in to play here?
+@@@ tsandall (~tsandall@89.100.16.195) has joined channel #scala
+<greg`> so how do i fix it im pretty confused
+<greg`> do i need to write toList(t())?  [23:06]
+@@@ jpfuentes2 (~jacques@static-71-251-230-114.rcmdva.fios.verizon.net) has
+    quit: Quit: My MacBook Pro has gone to sleep. ZZZzzz…
+@@@ zz_sprsquish (~sprsquish@squishtech.com) is now known as sprsquish  [23:07]
+@@@ nirvdrum (~nirvdrum@pool-108-20-151-26.bstnma.fios.verizon.net) has joined
+    channel #scala  [23:08]
+@@@ multibot__ (~PircBot@ec2-54-82-212-241.compute-1.amazonaws.com) has joined
+    channel #scala
+@@@ mizu_no_oto (~textual@c-76-24-18-193.hsd1.ma.comcast.net) has quit: Quit:
+    Computer has gone to sleep.
+<OlegYch> () is shorthand to apply()
+<greg`> so i need to t().toList(())?  [23:09]
+@@@ tsandall (~tsandall@89.100.16.195) has quit: Ping timeout: 250 seconds
+<wabash> OlegYch: Thanks!  [23:10]
+<OlegYch> greg`: you need t().toList  [23:11]
+@@@ multibot_ (~PircBot@ec2-54-242-84-48.compute-1.amazonaws.com) has quit:
+    Ping timeout: 240 seconds  [23:12]
+@@@ eizo (52e610b0@gateway/web/freenode/ip.82.230.16.176) has quit: Quit: Page
+    closed  [23:13]
+@@@ primer_ (~will@static-96-239-100-47.nycmny.fios.verizon.net) has quit:
+    Ping timeout: 255 seconds
+@@@ Squarism (~Squarism4@fh49n2-u-b-td1.ias.bredband.telia.com) has joined
+    channel #scala  [23:14]
+<greg`> ah ok and that will apply toList #unintuitive
+@@@ hzhao_ (~hzhao@66.162.159.254) has quit: Read error: Connection reset by
+    peer  [23:15]
+<OlegYch> seems pretty intuitive to me
+<OlegYch> why did you expect toList to require any parentheses?
+<wabash> OlegYch: So in that case, you aren't actually calling toList, are
+	 you?  [23:16]
+<greg`> because i thought parentheses was how you call a method  [23:17]
+<greg`> and that a dot would just reference the method
+@@@ hzhao (~hzhao@107-212-41-135.lightspeed.sntcca.sbcglobal.net) has joined
+    channel #scala
+<greg`> rather a dot without parentheses was how to reference a method
+<OlegYch> no methods are allowed to have no argument lists
+<greg`> i see  [23:18]
+<wabash> OlegYch: Sorry, can yo uclarify?
+<wabash> no-arg lists are ok?
+@@@ baweaver (~baweaver@159.140.254.109) has quit: Remote host closed the
+    connection
+<greg`> so to call a method without any arguments you just write it without
+	parentheses
+<greg`> how does one just reference a method as a first class object then
+								        [23:19]
+@@@ treehug88 (~treehug88@static-96-239-100-47.nycmny.fios.verizon.net) has
+    quit:   [23:20]
+@@@ datura (~datura@unaffiliated/datura) has joined channel #scala  [23:21]
+@@@ fractalooped (~fractaloo@99-51-184-142.lightspeed.austtx.sbcglobal.net)
+    has quit: Ping timeout: 264 seconds  [23:22]
+@@@ jedws (~textual@c110-20-183-136.rivrw10.nsw.optusnet.com.au) has joined
+    channel #scala
+@@@ DigitalKiwi (~kiwi@unaffiliated/digitalkiwi) has quit: Quit: ZNC -
+    http://znc.in  [23:25]
+@@@ superguenter (~Adium@c-67-180-211-161.hsd1.ca.comcast.net) has joined
+    channel #scala  [23:26]
+ERC>
 
+*** 
+*** 
+
+   
     
 
+*** lazily generating a stream
+- Streams allow us to describe inside the list [how] to generate the elements and act as if the elements  already [exist]
+- generally laziness allows us to separate then [generation] from [evaluation] of an expression
+- when composing lazy functions on a stream
+  - we the operations on the elements are interleaved
+  - as is the generation of the elements
+    - streams are sometimes called first class loops because they encode a loop of generating code in a first class objectr
+**** general form for lazy evaluation
+recursive
+#+BEGIN_SRC scala
+def exists(p: A => Boolean): Boolean = this match {
+case Cons(h, t) => p(h()) || t().exists(p)
+case _ => false
+}
+#+END_SRC
+foldRight
+#+BEGIN_SRC scala
+def foldRight[B](z: => B)(f: (A, => B) => B): B =
+this match {
+case Cons(h,t) => f(h(), t().foldRight(z)(f))
+case _ => z
+}
+#+END_SRC
+- the functions second argument and the initial value B are lazily evaluated
+- if its not the end of the list evaluate the function of
+  - head : A
+  - the tail of the function evaluated with B
+  - this looks just like foldright for lists excepth the [lazy evaluation] of the initialiser
+  - if the function chooses not to evaluate its second argument then recursion doesnt occur
+  - AHA this is left up to whoever implements f!
+
+exists using foldRight Stream
+#+BEGIN_SRC scala
+def exists(p: A => Boolean): Boolean =
+foldRight(false)((a, b) => p(a) || b
+#+END_SRC
+
+- here b only gets evaluated if p(a) is false
+- and b  is used to replace the expression
+  - due to =code= p(a) || b =code=
+- when the or system forces b to evaluate it actually means
+  - b().foldRight(z)(f) thus b becomes the new a and a new tail is generated for the next foldRight
+*** corecursive functions
+#+BEGIN_SRC scala
+def unfold[A, S](z: S)(f: S => Option[(A, S)]): Stream[A]
+#+END_SRC
+- option decides when stream is terminated
+- function produces stream elements as long as f terminates
+*** what does this mean ?     :drill:
+Footnote 8
+- Using unfold to define constant and ones means that we don't get sharing as in the recursive definition 
+#+BEGIN_SRC scala
+ val ones: Stream[Int] = cons(1, ones)
+#+END_SRC
+-  The recursive definition consumes constant memory even if we keep a reference to it around while traversing it, while the unfold
+-based implementation does not. 
+- Preserving sharing is not something we usually rely on when programming with streams, since it is extremely delicate and not tracked by the types. For instance, sharing is destroyed when
+calling even xs.map(x => x) .

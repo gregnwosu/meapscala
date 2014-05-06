@@ -17,15 +17,14 @@ sealed trait Either[+E, +A] {
     case Right(Right(v)) => Right(v)
     case Right(Left(v)) => Left(v)
     case Left(v) => Left(v)
-
   }
 
   def orElse[EE >: E,B >: A](b: => Either[EE, B]): Either[EE, B] = this match {
       case Left(_) => b
       case Right(v) => Right(v)
-    }
+  }
 
-  def map2[EE >: E, B, C](b: Either[EE, B])(f: (A, B) => C):Either[EE, C] = 
+def map2[EE >: E, B, C](b: Either[EE, B])(f: (A, B) => C):Either[EE, C] = 
    this flatMap ( (r1v => (b map ( r2v  => f (r1v,r2v)))))
 
 def sequence[E, A](es: List[Either[E, A]]): Either[E, List[A]] = 
