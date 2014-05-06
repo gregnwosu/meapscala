@@ -4,9 +4,9 @@ object Exercise5{
 
 sealed trait Stream[+A]  {
 
+    def empty[A]: Stream[A] = Empty
          
    
-    def empty[A]: Stream[A] = Empty
     def apply[A](as: A*): Stream[A] =
       if (as.isEmpty) empty else cons(as.head, apply(as.tail: _*))
 
@@ -110,6 +110,13 @@ def fibs(): Stream[Int] = {
 fib(0,1)
 }
 
+object Stream{
+    def apply[A](as: A*): Stream[A] =
+      if (as.isEmpty) empty else cons(as.head, apply(as.tail: _*))
+
+    def empty[A]: Stream[A] = Empty
+
+}
 
 
 def main(args: Array[String]) :Unit  = {
@@ -120,7 +127,7 @@ def main(args: Array[String]) :Unit  = {
     println(constant(3).take(6).toList)
     println(fibs().take(6).toList)
     println(Stream(1,2,3).append(Stream(4,5,6)).toList)
-    println( Stream(1,2,3).zipAll(Stream(4,5,6))  )
+    println( Stream(1,2,3).zipAll(Stream(4,5,6,7)).toList  )
   }
 
 }
