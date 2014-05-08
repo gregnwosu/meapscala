@@ -27,7 +27,7 @@ https://github.com/gregnwosu/meapscala
 - square brackets with capitals signify [generics]/[polymorphic] functions
 - remember that anonymous functions should be wrapped in [brackets] and can name arguments only at [top] level
 - note that applying 1 function after another requires repeated use of [brackets]
-
+- No such thing as point free
 #+BEGIN_SRC scala
 def uncurry[A,B,C](f: A => B=> C): (A,B)=>C =
 (a:A,b:B) => f (a) (b)
@@ -540,4 +540,123 @@ tails exists (_ startsWith s)
 - by uses laziness to drop exit bad routes early
   - we can compose general functions
   - while retaining effciency
+** Chapter 6 
+*** capturing state
+- stateful functions generally have the form
+#+BEGIN_SRC 
+s -> (y,s)
+#+END_SRC
 
+- when we encounter state that we wish to make functional we should define an interface / trait for feeding state around as a parameter
+- we seperate the concern of capturing state and doing the computation
+#+BEGIN_SRC scala
+
+class Foo {
+private var s: FooState = ...
+   def bar: Bar
+   def baz: Int
+}
+#+END_SRC
+if we have a class where bar and baz mutate s; we can capture the state change in a pure way via:
+#+BEGIN_SRC scala
+trait Foo {
+   def bar: (Bar, Foo)
+   def baz: (Int, Foo)
+}
+#+END_SRC
+**** generalising stateful functions into common interfaces
+we can generalise the stateful
+#+BEGIN_SRC scala
+type Rand[+A] = RNG => (A, RNG)
+#+END_SRC
+here the the function interface is made generic over type A and its subtypes
+
+we use this wherenever there is : 
+- a program that usinses some RNG to produce and Answer A and another RNG 
+- what we have done is define a generic interface for all programs that have this shape
+ - that take some type RNG and produce RNG and Answer of type A
+
+****** making instances of generalised interfaces
+we can think of it of as different functions/machines that conform to the interface
+
+*******  the nextInt machine
+methods such has rngNext int can now be put into this interface via:
+#+BEGIN_SRC scala
+val fGetInt: Rand[Int] = _.nextInt
+#+END_SRC
+this translates to 
+#+BEGIN_SRC 
+val fGetInt: RNG => (Int+,RNG)
+#+END_SRC
+
+******* the unit machine
+create a function factory that takes a constant and returns a machine that 
+just returns that constant along with the current value of RNG
+#+BEGIN_SRC 
+def unit[A](a: A): Rand[A] =
+rng => (a, rng)
+#+END_SRC
+
+******* mapping a function over a state
+recall that Rand[A] is an alias for some stateful function
+hence:
+#+BEGIN_SRC scala
+def map[A,B](s: Rand[A])(f: A => B): Rand[B] =
+rng => {
+val (a, rng2) = s(rng)
+(f(a), rng2)
+}
+#+END_SRC
+- essentially changes a its input by RAND[A] to Rand[B]
+
+******* TODO is this really function composition as the title suggests?
+I really dont think so
+
+
+**** using for/do constructs
+remmeber that we use 
+- map to strip one layer apply a function and return the context 
+- flatmap to combine a functor with a function that produces a functor
+
+given that we have flatmap and ??? we can now rewrite
+#+BEGIN_SRC scala
+val ns: Rand[List[Int]] =
+int.flatMap(x =>
+int.flatMap(y =>
+ints(x).map(xs =>
+xs.map(_ % y))))
+#+END_SRC
+
+as:
+#+BEGIN_SRC scala
+val ns: Rand[List[Int]] = for {
+x <- int
+y <- int
+xs <- ints(x)
+} yield xs.map(_ % y)
+#+END_SRC
+
+both 
+- generate an integer x,
+- generate an integer y
+- create a list of random integers x length
+- map the modulus of y across integers
+
+although using the for construct is a lot easier
+***** tooling
+now we have the for construct we should develop tools to use it
+we include some utility functions
+these functions are just normal stateful operations however when thrown into the stream of processing 
+their only job is to manipulate the state they are not concerned with answers i.e. the first element of the tuple 
+******* get and set 
+to get and set the state during our imperative style programming
+
+
+
+#+BEGIN_SRC scala
+def get[S]: State[S, S] = State(s => (s, s))
+#+END_SRC
+
+#+BEGIN_SRC scala
+def set[S](s: S): State[S, Unit] = State(_ => ((), s))
+#+END_SRC
