@@ -660,3 +660,110 @@ def get[S]: State[S, S] = State(s => (s, s))
 #+BEGIN_SRC scala
 def set[S](s: S): State[S, Unit] = State(_ => ((), s))
 #+END_SRC
+** Chapter 7
+*** composing functional processes
+the central idea is that we create a type that captures the type of processing that we wish to do
+once we have created our par object we can wrap functions with it
+#+BEGIN_SRC scala
+def sum(ints: IndexedSeq[Int]): Int =
+   if (ints.size <= 1)
+      ints headOption getOrElse 0
+   else {
+     val (l,r) = ints.splitAt(ints.length/2)
+     val sumL: Par[Int] = Par.unit(sum(l))
+     val sumR: Par[Int] = Par.unit(sum(r))
+     Par.get(sumL) + Par.get(sumR)
+   }
+#+END_SRC
+
+*** Par
+ type for returning the result of a parallel computation
+#+BEGIN_SRC scala
+//pretty much like a future
+def unit[A](a: => A): Par[A] ,
+//pretty much like a git on a future
+def get[A](a: Par[A]): A 
+#+END_SRC
+
+
+**** unit
+- unit is like a constructor
+- it take a function to be computed in a parallel manner
+- it returns a Par reference,i.e. a unit of Parallel execution
+
+**** get
+
+**** laziness, map2 get unit
+- we can use laziness to stop scala from operating on arguments in left to right manner
+- choices
+  - we can create map2 with lazy arguments 
+    - stops scala from explcitly creating pars in a left to right manner
+  - we can create another lazy indication for Par to state that the instruction should be processed offthread
+    - fork takes a Par and gives it a concurrent semantic
+
+#+BEGIN_SRC scala
+def fork[A](a: => Par[A]): Par[A]
+
+#+END_SRC
+takes a Par and gives it an off thread semantic
+puts the concurrent semantic explicitly under programmer control
+
+**** differences between get and unit
+- unit is referentiallly transparent 
+- get isnt
+- unit will always return a par object immediately
+- get needs to wait for an asynchronous side effect
+
+
+
+
+if get wasnt referentially transparent the result would be just sequential as pareamters are evaluated right to left
+since we dont want to combine at the get level - we combine at the par level
+#+BEGIN_SRC scala
+def sum(ints: IndexedSeq[Int]): Par[Int] =
+if (ints.size <= 1)
+Par.unit(ints.headOption getOrElse 0)
+else {
+val (l,r) = ints.splitAt(ints.length/2)
+Par.map2(sum(l), sum(r))(_ + _)
+}
+
+#+END_SRC
+
+
+*** exploring concurrency
+- build a simple example of your problem domain
+- experiment
+- discover idiosyncracies of domain
+- solve/refactor
+- repeat
+CARVE OUT YOUR UNIVERSE
+EXPLORE ITS EXPRESSIVENESS
+*** strictness of map2
+- combine pars using map to maintain referential transparency
+- stops scalas right to left evaluation from making execution run sequentially
+
+
+*** strictness of par
+- we define par.fork so that we can explicitly control which of the functions are concurrent
+- par.fork
+ - lazy computation result
+- par 
+ - strict computation
+#+BEGIN_SRC scala
+def unit[A](a: A): Par[A]
+def lazyUnit[A](a: => A): Par[A] = fork(unit(a))
+#+END_SRC
+here lazyunit is a derived combinator
+- it knows nothing about the unit combinator. but knows it will need to use it whatever form it is finally implemented in
+
+*** we evaluate on [get] :drill:
+- this allows us to delay plugging in the execution strategy
+- when designing a parallel api we must decide on WHEN a computation is evaluated
+- it seems to make sense to delay it so that it can be plugged into some form of execution strategy at a later stage 
+  - see java executor framework for example
+- however we are really tailor fitting our concurrency api to meet our problem domain
+- get (now renamed to run)can be designed to take on an executor service and can handle cancellation , interrupption internally or can delegate by returning a future
+
+
+
