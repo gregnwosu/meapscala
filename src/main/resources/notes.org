@@ -747,23 +747,93 @@ EXPLORE ITS EXPRESSIVENESS
 *** strictness of par
 - we define par.fork so that we can explicitly control which of the functions are concurrent
 - par.fork
- - lazy computation result
-- par 
- - strict computation
+**** consequences of par.fork
+  - when to fork is handled by par.fork
+  - par value is evaluated lazily
+  - we dont mix semantics 
+    - can be strict
+      - map2 (combining) 
+      - par.unit (construction) 
+We can define a constructor for async work
+- evaluates lazily 
+  - prevent left to right evaluation bias
 #+BEGIN_SRC scala
 def unit[A](a: A): Par[A]
 def lazyUnit[A](a: => A): Par[A] = fork(unit(a))
 #+END_SRC
-here lazyunit is a derived combinator
-- it knows nothing about the unit combinator. but knows it will need to use it whatever form it is finally implemented in
+***** derived combinator
+- lazyUnit knows nothing about the unit combinator. but knows it will need to use it whatever form it is finally implemented in
+*** why we evaluate on [get] 					      :drill:
+- delay plugging in the execution strategy
+- decide on WHEN a computation is evaluated
 
-*** we evaluate on [get] :drill:
-- this allows us to delay plugging in the execution strategy
-- when designing a parallel api we must decide on WHEN a computation is evaluated
-- it seems to make sense to delay it so that it can be plugged into some form of execution strategy at a later stage 
-  - see java executor framework for example
+**** advantages of delying execution
+- delay decision of execution strategy 
+  - see java executor framework 
+  - delay delay delay decisions!!! not sure if this is a good idea but feels right
 - however we are really tailor fitting our concurrency api to meet our problem domain
-- get (now renamed to run)can be designed to take on an executor service and can handle cancellation , interrupption internally or can delegate by returning a future
+***** plugging into the java executor framework
+- get (now renamed to run)
+  - can take an executor service argument 
+  - return a Future
+- abilities gained 
+  - cancellation 
+  - interruption 
+  - execution strategy
+*** the model :drill:
+- [unit] promotes a value to a computation
+  - here the value can also be a function
+- [map2] combines 2 values into a single value using a binary function
+- [fork] marks a computation for parallel execution 
+    - this wont be evaluated until forced by run
+- [lazyUnit] wraps a computational value , and marks it for parallel computation
+- [run] forces the evaluation of a value to return its result
+*** BUT WAIT 
+up until now we have defined
+#+BEGIN_SRC scala
+
+// my answer to exercise 1
+//map2[B,C](pb:Par[B], f: (a:=>A,b:=>B) => C):Par[C]
+
+import java.util.concurrent.Callable
+import java.util.concurrent.TimeUnit
 
 
+abstract class ExecutorService {
+  def submit[A](a: Callable[A]): Future[A]
+  trait Future[A] {
+    def get: A
+    def get(timeout: Long, unit: TimeUnit): A
+    def cancel(evenIfRunning: Boolean): Boolean
+    def isDone: Boolean
+    def isCancelled: Boolean
+  }
+}
 
+abstract class  Par[A] {
+  def unit[A](a: A): Par[A]
+  def map2[A,B,C](a: Par[A], b: Par[B])(f: (A,B) => C): Par[C]
+  def fork[A](a: => Par[A]): Par[A]
+  def lazyUnit[A](a: => A): Par[A] = fork(unit(a))
+  def run[A](ExecutorService:es)(a: Par[A]): A
+}
+#+END_SRC
+
+but we have defined the model (form /shape) of Par[A]!!!!
+we have defined a class or group fo functions that take or return Par[A] but
+we havent said what the type of Par[A] is 
+its at this moment we can decide
+the simplest model/type/shape/form for Par[A]
+
+#+BEGIN_SRC scala
+type Par[A] = ExecutorService => Future[A]
+#+END_SRC
+- we dont acutally need for Par[A] to take an A value since, the A is passed to its constructors
+  - unit(A:a)
+  - lazyUnit(A:a)
+- the fact that Par[A] is a function type means that the future isnt created until it is supplied with an ExecutorService
+  - we delay the creation of its operating object 
+
+- A is an expression
+- this can include functions and arguments that evaluate to type A
+  - e.g. sum(l)

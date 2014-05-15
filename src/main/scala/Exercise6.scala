@@ -165,7 +165,7 @@ def turn:State[(Boolean,Int,Int),Int] =
 
 
 
-def main(args: Array[String]) :Unit  = {
+def mainold(args: Array[String]) :Unit  = {
     val seed = Simple(42)
     println("%.3f".format(double(seed)._1))
     println(ints(4)(seed))
