@@ -91,15 +91,24 @@ object Par {
       )(es)
     )
 }
+
+def chooser[A,B] (n:Par[A])(choices:A =>Par[B]):Par[B] = es => choices(n(es).get)(es)
+
+def choiceN[A](n: Par[Int])(choices: List[Par[A]]): Par[A]   =  chooser(n)(choices(_))
+
+def choiceMap[K,V](key: Par[K])(choices: Map[K,Par[V]]): Par[V]=  es => choices(key(es).get)(es)
+
+def choice[A](cond: Par[Boolean])(t: Par[A], f: Par[A]): Par[A] = chooser(cond)(b => if(b)t else f)
+
+def join[A](ppa: Par[Par[A]]): Par[A] = es => {
+  val pa = ppa(es).get
+  pa(es)
 }
 
-def choiceN[A](n: Par[Int])(choices: List[Par[A]]): Par[A] =  es => {
-  choices(n(es).get)(es)
-}
-
+def flatMap[A,B] (n:Par[A])(f:A =>Par[B]):Par[B] = join(es  =>  unit(f(n(es).get))(es))
 
 }
-
+}
 
 //Exercise7 
 
@@ -108,7 +117,6 @@ Given
 1. map(y)(id) == y ,
 show that 
 2. map(map(y)(g))(f) == map(y)(f compose g) .
-
 
 for f = id
 

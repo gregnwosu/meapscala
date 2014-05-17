@@ -6,7 +6,9 @@
 #+TAGS:
 #+DESCRIPTION:
 #+TITLE: Meap Scala Notes
+
 * MEAP Scala
+"We have an example that demands a function with the given signature, and so we just bring it into existence."
   :PROPERTIES:
   :ID:       o2b:ddb66efa-b325-4d09-85e2-c97b4239956c
   :END:
@@ -970,3 +972,17 @@ p2(es)(b => combiner ! Right(b))
 - we can create conceptual laws from the concepts in the domain
 - we can create laws from the shapes types in the implementation if we thing they may be useful
 - we can plain just invent laws we fancy
+*** distilling functions
+
+having implemented 
+#+BEGIN_SRC scala
+def chooser[A,B] (n:Par[A])(choices:A =>Par[B]):Par[B] = es => choices(n(es).get)(es)
+
+#+END_SRC
+
+- flatmap is composed of two simpler functions
+  - mapping of f:A => Par[B] over Par[A]
+    - this produces Par[Par[B]]
+      - since mapping unwraps applies and rewraps
+  - and a join or a flattening of Par[Par[B]] to Par[B]
+
