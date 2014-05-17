@@ -16,7 +16,7 @@ import java.util.concurrent.Future
 
 
 
-class Exercise{
+class Exercise7{
   type Par[A] = ExecutorService => Future[A]
   abstract class ExecutorService {
     def submit[A](a: Callable[A]): Future[A]
@@ -92,15 +92,44 @@ object Par {
         )
       )
     )
+}
+}
 
+def choiceN[A](n: Par[Int])(choices: List[Par[A]]): Par[A] =  es => {
+  choices(n(es).get)(es)
+}
+
+
+}
+
+
+//Exercise7 
+
+/*
+Given 
+1. map(y)(id) == y ,
+show that 
+2. map(map(y)(g))(f) == map(y)(f compose g) .
+
+
+for f = id
+
+map (map(y)(g)) (id)  
+ = map(y)(g) [substituting into 1]
+ = map(y)(id compose g)
+ = map(y)(f compose g) 2.
+
+map ([x]) (f) = [f(x)]
+therefore 
+map (map(y)(g)) (f) 
+ = [f(map(y)(g))] 
+ = [f([g(y)])]
+ = [ f . g (y) ]
+ = map (y) (f .g ) from 2.
+ */
    
-    
-    
-}
-
-}
-
-
-
-
-}
+/* Exercise 9
+fork(n) uses 1 additional thread from the main thread when called
+fork(n) deadlocks when numThreads = 1
+for a n size threadpool, fork n creates n threads
+*/    
