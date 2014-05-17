@@ -105,6 +105,8 @@ def join[A](ppa: Par[Par[A]]): Par[A] = es => {
   pa(es)
 }
 
+def flatMapjoin[A](ppa: Par[Par[A]]): Par[A] = flatMap (ppa) (x => x)
+
 def flatMap[A,B] (n:Par[A])(f:A =>Par[B]):Par[B] = join(es  =>  unit(f(n(es).get))(es))
 
 }
