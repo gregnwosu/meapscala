@@ -68,19 +68,17 @@ object Par {
 
   def sequence[A](l: List[Par[A]]): Par[List[A]] =
     ((es:ExecutorService) => {
-      UnitFuture(
-        (_,_)=>{
+      unit(
           l map((pa:Par[A])=>pa(es).get)
-        })
+        )(es)
     })
      
   def parFilter[A](l: List[A])(f: A => Boolean): Par[List[A]] =   {
     val fbs: List[Par[A]] = l.map(lazyUnit(_))
 
     ((es:ExecutorService) =>  
-      UnitFuture(
-        (
-          (_,_)=>
+      unit(
+        
           fbs.foldRight (Nil:List[A]) 
             (
               (pa:Par[A], la:List[A])=>  f (pa(es).get) match{
@@ -89,8 +87,8 @@ object Par {
                
               }
             )
-        )
-      )
+        
+      )(es)
     )
 }
 }
