@@ -985,4 +985,44 @@ def chooser[A,B] (n:Par[A])(choices:A =>Par[B]):Par[B] = es => choices(n(es).get
     - this produces Par[Par[B]]
       - since mapping unwraps applies and rewraps
   - and a join or a flattening of Par[Par[B]] to Par[B]
+** Chapter 8
+*** using scalacheck
+- we use scala Check
+- we use Gen class to create generators
+- we can create/combine combinators to create properties
+#+BEGIN_SRC scala
+val intList = Gen.listOf(Gen.choose(0,100))
+val prop =
+forAll(intList)(l => l.reverse.reverse == l) &&
+forAll(intList)(l => l.headOption == l.reverse.lastOption)
+val failingProp = forAll(intList)(l => l.reverse == l)
+#+END_SRC
+
+-finally we can call 
+
+#+BEGIN_EXAMPLE
+scala> prop.check
++ OK, passed 100 tests.
+#+END_EXAMPLE
+*** thoughts when designing a library
+- What data types should we use for our testing library?
+- What primitives should we define
+  - what should their meanings be?
+- What will the users of the function be using with the return type
+**** primitive types
+***** Gen
+- a Gen[A] is something that knows how to generate values of type A
+***** Prop
+**** combination
+We return a PROP type 
+not a boolean
+because we want to be able to combine it in intereesting ways
+#+BEGIN_SRC scala
+def forAll[A](l:Gen[List[A]]) (f : A => Boolean):Prop
+#+END_SRC
+hence , we add it to the interface required to make this type a property
+#+BEGIN_SRC scala 
+trait Prop { def &&(p: Prop): Prop }
+#+END_SRC
+**** abstraction/meaning
 
