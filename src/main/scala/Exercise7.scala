@@ -1,4 +1,4 @@
-
+// more testing 
 // my answer to exercise 1
 //map2[B,C](pb:Par[B], f: (a:=>A,b:=>B) => C):Par[C]
 
