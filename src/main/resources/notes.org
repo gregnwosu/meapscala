@@ -1025,4 +1025,23 @@ hence , we add it to the interface required to make this type a property
 trait Prop { def &&(p: Prop): Prop }
 #+END_SRC
 **** abstraction/meaning
+*** implementing flatmap on Generators
+#+BEGIN_SRC scala
+case class Gen[A](sample: State[RNG,A]){
+  def flatMap[B](f: A => Gen[B]): Gen[B] = Gen((s:RNG) =>  {
+   val (a,s1) = sample (s)
+   val f2 = f(a).sample
+   f2(s1)
+  })
+#+END_SRC
+- we know that it will be stateful function so we begin by passing the state RNG in a lambda
+- we extract (a,s2) from the inner function state
+  - this is ALL we can do we only have a state from the lambda arg and an existing inner stateful function
+- we apply f(a) to get a genB from which we again extract the sample
+  -we apply the function to the RESULT of the application above
+  -again all we are doing here is we are using f at it earliest opportunity
+- this gives us another functor- WE EXTRACT the innards of this functor for a function that maps state to B
+- we apply this function to the latest state. to give us a B
+- because we are already in a function..... this creates our stateful computation
+- remember once you are inside the lambda the search is for createing the object INSIDE the functor
 

@@ -6,6 +6,8 @@ abstract class Exercise8 {
 def listOf[A](a: Gen[A]): Gen[List[A]]
 def forAll[A](l:Gen[List[A]]) (f : A => Boolean):Prop
 
+
+
 def flatMap[S,A,B](f: State[S,A])(g: A => State[S,B]): State[S,B] = 
     rng => {
       val (ra, rng1) = f(rng)
@@ -38,7 +40,11 @@ def flatMap[S,A,B](f: State[S,A])(g: A => State[S,B]): State[S,B] =
 type Rand[A] = State[RNG,A]
 type State[S,+A] = S => (A,S)
 case class Gen[A](sample: State[RNG,A]){
-
+  def flatMap[B](f: A => Gen[B]): Gen[B] = Gen((s:RNG) =>  {
+   val (a,s1) = sample (s)
+   val f2 = f(a).sample
+   f2(s1)
+  })
 }
 
   
@@ -61,7 +67,6 @@ trait Prop {
 
 
 object Gen{
-
   def nonNegativeInt(rng: RNG):(Int,RNG)={
     val  (res, rng2) = rng.nextInt
     if (res == Int.MinValue)
@@ -89,8 +94,8 @@ def choose(start: Int, stopExclusive: Int): Gen[Int]  = {
 
 }
 object Prop {
-type FailedCase = String
-type SuccessCount = Int
+  type FailedCase = String
+  type SuccessCount = Int
 }
 
 
