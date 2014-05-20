@@ -45,6 +45,15 @@ case class Gen[A](sample: State[RNG,A]){
    val f2 = f(a).sample
    f2(s1)
   })
+
+def map[B](f: A => B): Gen[B]  = this flatMap ((a:A) => unit(f(a))) 
+
+def map2[B,C](rb:Gen[B])(f: (A,B)=>C): Gen[C] = flatMap ((a:A) => rb map  ((b:B) => f(a,b) ))
+
+
+
+
+//def listOfN(size: Gen[Int]): Gen[List[A]] 
 }
 
   
@@ -84,15 +93,16 @@ def nonNegativeLessThan(n: Int): Rand[Int] =
       nonNegativeLessThan(n)(rng)
 })
 
-//notes use a random number generator internally 
-
 def choose(start: Int, stopExclusive: Int): Gen[Int]  = {
   val dist = stopExclusive - start
   Gen(map  (nonNegativeLessThan(dist)) (_+1))
 }
 
+def sameParity(from: Int, to: Int): Gen[(Int,Int)] =  (choose(from,to) map2 ( choose(from,to))) ((_,_))
+//notes use a random number generator internally 
 
 }
+
 object Prop {
   type FailedCase = String
   type SuccessCount = Int
