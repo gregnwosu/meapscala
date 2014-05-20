@@ -1,18 +1,66 @@
-import org.scalacheck.Prop.forAll
-import org.scalacheck.Gen
 
 
-class Exercise8 {
+
+
+abstract class Exercise8 {
 def listOf[A](a: Gen[A]): Gen[List[A]]
-def forAll[A](l:Gen[List[A]]) (f : A => Boolean):Boolean
+def forAll[A](l:Gen[List[A]]) (f : A => Boolean):Prop
 
-trait Prop { 
-  def &&(p: Prop): Prop  = Prop(this.success && p.success)
-  def check: Either[(FailedCase, SuccessCount), SuccessCount]
+def flatMap[S,A,B](f: State[S,A])(g: A => State[S,B]): State[S,B] = 
+    rng => {
+      val (ra, rng1) = f(rng)
+      val (rb, rng2) = g(ra)(rng1)
+      (rb,rng2)
+    }
+  def unit[S,A](a: A): State[S, A] =
+    rng => (a, rng)
+
+  def map[S,A,B](s: State[S,A])(f: A => B): State[S,B] = flatMap (s) ( x =>unit(f(x)))
+  def map2[S,A,B,C](ra: State[S,A], rb: State[S,B])(f: (A, B) => C): State[S,C] =
+    flatMap (ra) ((a:A) => map (rb) ((b:B) => f(a,b) ))
+
+  def sequence[S,A](fs: List[State[S,A]]): State[S, List[A]] = 
+    rng => {
+
+      def processRands(gs: List[State[S,A]])(rg:S):(List[A],S) = gs match {
+        
+        case h::t => {
+          val (lh,rng2) = h(rg)
+          val (lt,rng3) = processRands(t)(rng2)
+          (lh::lt,rng3)
+        }
+        case _ => (List() ,rng)
+      }
+      processRands(fs)(rng)
+      
+    }
+
+type Rand[A] = State[RNG,A]
+type State[S,+A] = S => (A,S)
+case class Gen[A](sample: State[RNG,A]){
+
 }
 
+  
 
-case class Gen[A](sample: State[RNG,A])
+def unit[A](a: => A):Gen[A] = Gen((s:RNG) => (a,s))
+def boolean: Gen[Boolean] = Gen(map (((x:RNG) => x.nextInt):State[RNG,Int])  (_%2==0))
+
+def listOfN[A](n: Int, g: Gen[A]): Gen[List[A]]  = g match {
+  case Gen(s) => Gen(sequence (List.fill(n)(s)))
+}
+
+trait Prop { 
+  def && (p: Prop): Prop  = forAll(unit( List(this, p)))(_.check)
+  def check : Boolean
+}
+    
+ 
+//  def check: Either[(FailedCase, SuccessCount), SuccessCount]
+
+
+
+object Gen{
 
   def nonNegativeInt(rng: RNG):(Int,RNG)={
     val  (res, rng2) = rng.nextInt
@@ -35,13 +83,17 @@ def nonNegativeLessThan(n: Int): Rand[Int] =
 
 def choose(start: Int, stopExclusive: Int): Gen[Int]  = {
   val dist = stopExclusive - start
-  map (_+1) nonNegativeLessThan(dist)
+  Gen(map  (nonNegativeLessThan(dist)) (_+1))
 }
 
+
+}
 object Prop {
 type FailedCase = String
 type SuccessCount = Int
 }
+
+
 
 
 case class Simple(seed: Long) extends RNG {
@@ -55,14 +107,14 @@ case class Simple(seed: Long) extends RNG {
 
 
 //Tests
-  val intList = Gen.listOf(Gen.choose(0,100))
-  val onesList = Gen.listOf(Gen.choose(1,1))
-  def sum (l:List[Int]):Int =  l . foldRight( 0) (_ + _)
- val orderInvariant = forAll(intList) ( sum (l) == sum (l.reverse))
- val sumLengthProp = forAll (onesList) (sum(l) == length(l))
+//  val intList = Gen.listOf(Gen.choose(0,100))
+//  val onesList = Gen.listOf(Gen.choose(1,1))
+//  def sum (l:List[Int]):Int =  l . foldRight( 0) (_ + _)
+// val orderInvariant = forAll(intList) ( sum (l) == sum (l.reverse))
+// val sumLengthProp = forAll (onesList) (sum(l) == length(l))
 //maximum of list int
- val orderInvariantProp = forAll(intList) ( max (l) == max (l.reverse))
- val associativeProp = forAll(intList) (max (l) == max(  list(max(split(l, l.len/2)(0)) , max(split(l, l.len/2)(0)))))
+ //val orderInvariantProp = forAll(intList) ( max (l) == max (l.reverse))
+ //val associativeProp = forAll(intList) (max (l) == max(  list(max(split(l, l.len/2)(0)) , max(split(l, l.len/2)(0)))))
 
 
 
