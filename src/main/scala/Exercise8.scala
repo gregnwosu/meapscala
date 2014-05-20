@@ -50,10 +50,9 @@ def map[B](f: A => B): Gen[B]  = this flatMap ((a:A) => unit(f(a)))
 
 def map2[B,C](rb:Gen[B])(f: (A,B)=>C): Gen[C] = flatMap ((a:A) => rb map  ((b:B) => f(a,b) ))
 
+def listOfN(size: Gen[Int]): Gen[List[A]] = size flatMap ((sz:Int)=>listOfNStatic(sz)(this))
 
 
-
-//def listOfN(size: Gen[Int]): Gen[List[A]] 
 }
 
   
@@ -61,9 +60,8 @@ def map2[B,C](rb:Gen[B])(f: (A,B)=>C): Gen[C] = flatMap ((a:A) => rb map  ((b:B)
 def unit[A](a: => A):Gen[A] = Gen((s:RNG) => (a,s))
 def boolean: Gen[Boolean] = Gen(map (((x:RNG) => x.nextInt):State[RNG,Int])  (_%2==0))
 
-def listOfN[A](n: Int, g: Gen[A]): Gen[List[A]]  = g match {
-  case Gen(s) => Gen(sequence (List.fill(n)(s)))
-}
+def listOfNStatic[A](n: Int)(g: Gen[A]): Gen[List[A]]  = Gen(sequence (List.fill(n)(g.sample)))
+
 
 trait Prop { 
   def && (p: Prop): Prop  = forAll(unit( List(this, p)))(_.check)
@@ -98,8 +96,11 @@ def choose(start: Int, stopExclusive: Int): Gen[Int]  = {
   Gen(map  (nonNegativeLessThan(dist)) (_+1))
 }
 
-def sameParity(from: Int, to: Int): Gen[(Int,Int)] =  (choose(from,to) map2 ( choose(from,to))) ((_,_))
-//notes use a random number generator internally 
+def sameParity(from: Int, to: Int): Gen[(Int,Int)] =  (choose(from,to) map2 ( choose(from,to))) ((_,_)) flatMap ((t)=>(t._1+t._2%2==0) match {
+  case true => unit(t)
+  case false => sameParity(from,to)
+})
+
 
 }
 
