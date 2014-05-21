@@ -2,6 +2,16 @@
 
 
 
+
+
+
+  
+
+
+
+
+object Exercise6 {
+
 case class Simple(seed: Long) extends RNG {
       def nextInt: (Int, RNG) = {
         val newSeed = (seed * 0x5DEECE66DL + 0xBL) & 0xFFFFFFFFFFFFL
@@ -11,16 +21,10 @@ case class Simple(seed: Long) extends RNG {
       }
     }
 
-
 trait RNG {
   def nextInt: (Int, RNG)
   }
-  
 
-
-
-
-object Exercise6 {
   type State[S,+A] = S => (A,S)
   type Rand[A] = State[RNG,A]
 
@@ -178,7 +182,30 @@ def mainold(args: Array[String]) :Unit  = {
 }
   
 
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 // i found exercise 10 difficult because i do not yet understand scalas companion object /case class structure,
@@ -186,26 +213,26 @@ def mainold(args: Array[String]) :Unit  = {
 
 object State {
 
-case class State[S, +A](run: S => (A, S)) {
-  def map[B](f: A => B): State[S, B] =
-    flatMap(a => unit(f(a)))
-  def map2[B,C](sb: State[S, B])(f: (A, B) => C): State[S, C] =
-    flatMap(a => sb.map(b => f(a, b)))
-  def flatMap[B](f: A => State[S, B]): State[S, B] = State(s => {
-    val (a, s1) = run(s)
+  case class State[S, +A](run: S => (A, S)) {
+    def map[B](f: A => B): State[S, B] =
+      flatMap(a => unit(f(a)))
+    def map2[B,C](sb: State[S, B])(f: (A, B) => C): State[S, C] =
+      flatMap(a => sb.map(b => f(a, b)))
+    def flatMap[B](f: A => State[S, B]): State[S, B] = State(s => {
+      val (a, s1) = run(s)
     f(a).run(s1)
-  })
-}
+    })
+  }
 
   type Rand[A] = State[RNG, A]
 
   def unit[S, A](a: A): State[S, A] =
     State(s => (a, s))
-  
+
   // The idiomatic solution is expressed via foldRight
   def sequenceViaFoldRight[S,A](sas: List[State[S, A]]): State[S, List[A]] =
     sas.foldRight(unit[S, List[A]](List()))((f, acc) => f.map2(acc)(_ :: _))
-  
+
   // This implementation uses a loop internally and is the same recursion
   // pattern as a left fold. It is quite common with left folds to build
   // up a list in reverse order, then reverse it at the end.
@@ -218,7 +245,7 @@ case class State[S, +A](run: S => (A, S)) {
       }
     State((s: S) => go(s,sas,List()))
   }
-  
+
   // We can also write the loop using a left fold. This is tail recursive like the
   // previous solution, but it reverses the list _before_ folding it instead of after.
   // You might think that this is slower than the `foldRight` solution since it
@@ -238,4 +265,12 @@ case class State[S, +A](run: S => (A, S)) {
 
   def set[S](s: S): State[S, Unit] = State(_ => ((), s))
 }
+
+
+
+
+}
+
+
+
 
