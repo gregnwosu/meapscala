@@ -3,16 +3,16 @@ abstract class Exercise8 {
 trait RNG {
   def nextInt: (Int, RNG)
   def nextDouble: (Double, RNG)
-  }
+}
 
   def listOf[A](a: Gen[A]): Gen[List[A]]
 
 
 
-def buildMsg[A](s: A, e: Exception): String = 
-  s"test case: $s\n" +
-  s"generated an exception: ${e.getMessage}\n" +
-  s"stack trace:\n ${e.getStackTrace.mkString("\n")}"
+  def buildMsg[A](s: A, e: Exception): String =
+    s"test case: $s\n" +
+    s"generated an exception: ${e.getMessage}\n" +
+    s"stack trace:\n ${e.getStackTrace.mkString("\n")}"
 
   def flatMap[S,A,B](f: State[S,A])(g: A => State[S,B]): State[S,B] =
     rng => {
@@ -43,36 +43,41 @@ def buildMsg[A](s: A, e: Exception): String =
       
     }
 
-type Rand[A] = State[RNG,A]
-type State[S,+A] = S => (A,S)
-case class Gen[A](sample: State[RNG,A]){
-  def flatMap[B](f: A => Gen[B]): Gen[B] = Gen((s:RNG) =>  {
-   val (a,s1) = sample (s)
-   val f2 = f(a).sample
-   f2(s1)
-  })
-
-  def map[B](f: A => B): Gen[B]  = this flatMap ((a:A) => Gen.unit(f(a)))
-
-  def map2[B,C](rb:Gen[B])(f: (A,B)=>C): Gen[C] = flatMap ((a:A) => rb map  ((b:B) => f(a,b) ))
-
-  def listOfN(size: Gen[Int]): Gen[List[A]] = size flatMap ((sz:Int)=>listOfNStatic(this)(sz))
+  type Rand[A] = State[RNG,A]
+  type State[S,+A] = S => (A,S)
 
 
-//aha now we have flatmap
-  def listOfNFor(size: Gen[Int]): Gen[List[A]] =
-    for{
-      sz <- size
+
+
+//GEN
+  case class Gen[A](sample: State[RNG,A]){
+    def flatMap[B](f: A => Gen[B]): Gen[B] = Gen((s:RNG) =>  {
+      val (a,s1) = sample (s)
+      val f2 = f(a).sample
+      f2(s1)
+    })
+
+    def map[B](f: A => B): Gen[B]  = this flatMap ((a:A) => Gen.unit(f(a)))
+
+    def map2[B,C](rb:Gen[B])(f: (A,B)=>C): Gen[C] = flatMap ((a:A) => rb map  ((b:B) => f(a,b) ))
+
+    def listOfN(size: Gen[Int]): Gen[List[A]] = size flatMap ((sz:Int)=>listOfNStatic(this)(sz))
+
+
+    //aha now we have flatmap
+    def listOfNFor(size: Gen[Int]): Gen[List[A]] =
+      for{
+        sz <- size
       l  <- listOfNStatic(this) (sz)
-    }yield(l)
+      }yield(l)
 
 
 
  
-}
+  }
 
 
-  // case class SGen[+A](forSize: Int => Gen[A]) 
+case class SGen[+A](forSize: Int => Gen[A]) 
 
   def boolean: Gen[Boolean] = Gen(map (((x:RNG) => x.nextInt):State[RNG,Int])  (_%2==0))
 
@@ -80,81 +85,82 @@ case class Gen[A](sample: State[RNG,A]){
 
 
 
-type TestCases = Int
-type FailedCase = String
-type SuccessCount = Int
-type Result = Option[(FailedCase, SuccessCount)] 
-case class Prop(run: (TestCases,RNG, Char) => Result ){
+  type TestCases = Int
+  type FailedCase = String
+  type SuccessCount = Int
+  type Result = Option[(FailedCase, SuccessCount)]
+  case class Prop(run: (TestCases,RNG, Char) => Result ){
   def && (p: Prop): Prop   = Prop((tc:TestCases, rng:RNG, tag:Char) => this.run(tc, rng, 'L') match{
     case None => p.run(tc,rng,'R')
     case report => report
   })
 
-  def || (p: Prop): Prop   = Prop((tc:TestCases, rng:RNG, tag:Char) => this.run(tc, rng,'L') match{
-    case None => None
-    case report => p.run(tc,rng,'R')
-  })
+    def || (p: Prop): Prop   = Prop((tc:TestCases, rng:RNG, tag:Char) => this.run(tc, rng,'L') match{
+      case None => None
+      case report => p.run(tc,rng,'R')
+    })
 
-  // def check : Boolean
+    // def check : Boolean
 }
 
-  def forAll[A](as:Gen[A]) (f : A => Boolean):Prop 
-//  = Prop {
-//     (n,rng) => randomStream(as)(rng) .zip (Stream.from(0)).take(n).map{
-//       case (a,i) => try {
-//         if (f(a)) None else Some((a.toString, i))
-//       } catch { case e: Exception => Some ((buildMsg(a,e),i))}
-//     }.find(_.isDefined).getOrElse(None)
-//   }    
-
-
- 
-//  def check: Either[(FailedCase, SuccessCount), SuccessCount]
+  def forAll[A](as:Gen[A]) (f : A => Boolean):Prop
+  //  = Prop {
+  //     (n,rng) => randomStream(as)(rng) .zip (Stream.from(0)).take(n).map{
+  //       case (a,i) => try {
+  //         if (f(a)) None else Some((a.toString, i))
+  //       } catch { case e: Exception => Some ((buildMsg(a,e),i))}
+  //     }.find(_.isDefined).getOrElse(None)
+  //   }
 
 
 
-object Gen{
-  def unit[A](a: => A):Gen[A] = Gen((s:RNG) => (a,s))
-  def nonNegativeInt(rng: RNG):(Int,RNG)={
-    val  (res, rng2) = rng.nextInt
-    if (res == Int.MinValue)
-      nonNegativeInt(rng2)
-    else
-      (Math.abs(res), rng2)
-  }
-
-def doubleGen():Gen[Double] = Gen((s:RNG) =>(s.nextDouble))
+  //  def check: Either[(FailedCase, SuccessCount), SuccessCount]
 
 
 
-  def nonNegativeLessThan(n: Int): Rand[Int] =
-    flatMap(nonNegativeInt) (i => rng =>{
-      val mod = i % n
+  object Gen{
+    def unit[A](a: => A):Gen[A] = Gen((s:RNG) => (a,s))
+    def nonNegativeInt(rng: RNG):(Int,RNG)={
+      val  (res, rng2) = rng.nextInt
+      if (res == Int.MinValue)
+        nonNegativeInt(rng2)
+      else
+        (Math.abs(res), rng2)
+    }
+
+    def doubleGen():Gen[Double] = Gen((s:RNG) =>(s.nextDouble))
+
+
+
+    def nonNegativeLessThan(n: Int): Rand[Int] =
+      flatMap(nonNegativeInt) (i => rng =>{
+        val mod = i % n
       if (i + (n-1) - mod >= 0)
         (mod, rng)
       else
         nonNegativeLessThan(n)(rng)
     })
 
-  def choose(start: Int, stopExclusive: Int): Gen[Int]  = {
-    val dist = stopExclusive - start
-    Gen(map  (nonNegativeLessThan(dist)) (_+1))
+    def choose(start: Int, stopExclusive: Int): Gen[Int]  = {
+      val dist = stopExclusive - start
+      Gen(map  (nonNegativeLessThan(dist)) (_+1))
   }
 
-  def sameParity(from: Int, to: Int): Gen[(Int,Int)] =  (choose(from,to) map2 ( choose(from,to))) ((_,_)) flatMap ((t)=>(t._1+t._2%2==0) match {
-    case true => unit(t)
-    case false => sameParity(from,to)
-})
+    def sameParity(from: Int, to: Int): Gen[(Int,Int)] =  (choose(from,to) map2 ( choose(from,to))) ((_,_)) flatMap ((t)=>(t._1+t._2%2==0) match {
+      case true => unit(t)
+      case false => sameParity(from,to)
+    })
 
- def sameParityFor(from: Int, to: Int): Gen[(Int,Int)] =  
-   for {
-     v1 <- choose(from, to )
-     v2 <- choose(from, to )
-     t <- if (v1+v2%2==0)
-     unit((v1,v2)):Gen[(Int,Int)]
-     else
-     sameParityFor(from, to)
-   }yield(t)
+    def sameParityFor(from: Int, to: Int): Gen[(Int,Int)] =
+      for {
+        v1 <- choose(from, to )
+        v2 <- choose(from, to )
+        t <- 
+        if (v1+v2%2==0)
+        unit((v1,v2)):Gen[(Int,Int)]
+        else
+        sameParityFor(from, to)
+      }yield(t)
 
 
 }
@@ -222,8 +228,6 @@ object Prop {
 //         (n, nextRNG)
 //       }
 //     }
-
-
 //Tests
 //val intList = Gen.listOf(Gen.choose(0,100))
 //val onesList = Gen.listOf(Gen.choose(1,1))
