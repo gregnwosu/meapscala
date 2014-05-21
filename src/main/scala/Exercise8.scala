@@ -67,11 +67,12 @@ case class Gen[A](sample: State[RNG,A]){
     }yield(l)
 
 
+
+ 
 }
 
-  
 
-
+  // case class SGen[+A](forSize: Int => Gen[A]) 
 
   def boolean: Gen[Boolean] = Gen(map (((x:RNG) => x.nextInt):State[RNG,Int])  (_%2==0))
 
@@ -83,15 +84,15 @@ type TestCases = Int
 type FailedCase = String
 type SuccessCount = Int
 type Result = Option[(FailedCase, SuccessCount)] 
-case class Prop(run: (TestCases,RNG,tag:Char) => Result, ){
-  def && (p: Prop): Prop   = Prop((tc:TestCases, rng:RNG) => this.run(tc, rng. 'L') match{
-    case None => p.run(tc,rng.'R')
+case class Prop(run: (TestCases,RNG, Char) => Result ){
+  def && (p: Prop): Prop   = Prop((tc:TestCases, rng:RNG, tag:Char) => this.run(tc, rng, 'L') match{
+    case None => p.run(tc,rng,'R')
     case report => report
   })
 
-  def || (p: Prop): Prop   = Prop((tc:TestCases, rng:RNG) => this.run(tc, rng.'L') match{
+  def || (p: Prop): Prop   = Prop((tc:TestCases, rng:RNG, tag:Char) => this.run(tc, rng,'L') match{
     case None => None
-    case report => p.run(tc,rng.'R')
+    case report => p.run(tc,rng,'R')
   })
 
   // def check : Boolean
