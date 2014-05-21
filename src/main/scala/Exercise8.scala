@@ -225,6 +225,20 @@ object Prop {
 
 
 
+type MaxSize = Int 
+case class Prop(run: (MaxSize,TestCases,RNG) => Result) {}
+
+def forAll[A](g: SGen[A])(f: A => Boolean): Prop = 
+  forAll(g(_))(f)
+def forAll[A](g: Int => Gen[A])(f: A => Boolean): Prop = 
+  Prop { (max,n,rng) =>  
+    val casesPerSize = (n + (max - 1)) / max
+    val props: Stream[Prop] = Stream.from(0).take((n min max) + 1).map(i => forAll(g(i))(f)) 
+    val prop: Prop = props.map(p => Prop { (max, _, rng) => p.run(max, casesPerSize, rng) }).toList.reduce(_ && _) 
+    prop.run(max,n,rng)
+  }
+
+
 
 // case class Simple(seed: Long) extends RNG {
 //       def nextInt: (Int, RNG) = {

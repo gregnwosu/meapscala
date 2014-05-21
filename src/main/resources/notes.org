@@ -1075,3 +1075,28 @@ Prop {
    }
 
 #+END_SRC
+
+*** scaling
+
+- Create a Prop given 
+  - a upper limit number of testcases max
+  - the length of testcase sequence n
+- work out how many testcases we will use for an testcase sequence of length n
+- stream a number starting from 0
+- take the smaller out of (number from n max) as i and use it to make a property that
+  - has a testccase sequence length of i
+- with each property from this list of properties
+  - create a propery that when run will insert the casespersize and ignore its own parameter
+- change the stream to a list
+- reduce to one property using our && combinator
+#+BEGIN_SRC scala
+def forAll[A](g: Int => Gen[A])(f: A => Boolean): Prop = 
+  Prop { (max,n,rng) =>  
+    val casesPerSize = (n + (max - 1)) / max
+    val props: Stream[Prop] = Stream.from(0).take((n min max) + 1).map(i => forAll(g(i))(f)) 
+    val prop: Prop = props.map(p => Prop { (max, _, rng) => p.run(max, casesPerSize, rng) }).toList.reduce(_ && _) 
+    prop.run(max,n,rng)
+  }
+
+
+#+END_SRC
