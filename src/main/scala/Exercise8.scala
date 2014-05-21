@@ -46,11 +46,19 @@ case class Gen[A](sample: State[RNG,A]){
    f2(s1)
   })
 
-def map[B](f: A => B): Gen[B]  = this flatMap ((a:A) => unit(f(a))) 
+  def map[B](f: A => B): Gen[B]  = this flatMap ((a:A) => unit(f(a)))
 
-def map2[B,C](rb:Gen[B])(f: (A,B)=>C): Gen[C] = flatMap ((a:A) => rb map  ((b:B) => f(a,b) ))
+  def map2[B,C](rb:Gen[B])(f: (A,B)=>C): Gen[C] = flatMap ((a:A) => rb map  ((b:B) => f(a,b) ))
 
-def listOfN(size: Gen[Int]): Gen[List[A]] = size flatMap ((sz:Int)=>listOfNStatic(sz)(this))
+  def listOfN(size: Gen[Int]): Gen[List[A]] = size flatMap ((sz:Int)=>listOfNStatic(this)(sz))
+
+
+//aha now we have flatmap
+  def listOfNFor(size: Gen[Int]): Gen[List[A]] =
+    for{
+      sz <- size
+      l  <- listOfNStatic(this) (sz)
+    }yield(l)
 
 
 }
@@ -60,7 +68,7 @@ def listOfN(size: Gen[Int]): Gen[List[A]] = size flatMap ((sz:Int)=>listOfNStati
 def unit[A](a: => A):Gen[A] = Gen((s:RNG) => (a,s))
 def boolean: Gen[Boolean] = Gen(map (((x:RNG) => x.nextInt):State[RNG,Int])  (_%2==0))
 
-def listOfNStatic[A](n: Int)(g: Gen[A]): Gen[List[A]]  = Gen(sequence (List.fill(n)(g.sample)))
+def listOfNStatic[A](g: Gen[A])(n: Int): Gen[List[A]]  = Gen(sequence (List.fill(n)(g.sample)))
 
 
 trait Prop { 
@@ -81,6 +89,8 @@ object Gen{
     else
       (Math.abs(res), rng2)
   }
+
+
 
 def nonNegativeLessThan(n: Int): Rand[Int] = 
   flatMap(nonNegativeInt) (i => rng =>{ 
@@ -103,6 +113,23 @@ def sameParity(from: Int, to: Int): Gen[(Int,Int)] =  (choose(from,to) map2 ( ch
 
 
 }
+
+
+def genAToOptA[A](g:Gen[A]):Gen[Option[A]] = g map ((Some(_)))
+
+
+
+
+
+def genOptAToA[A](g:Gen[Option[A]]):Gen[A] = for {
+  optA <- g
+  a <- optA match {
+    case None => genOptAToA(g)
+    case Some(y) => unit(y):Gen[A]
+  }
+        
+
+}yield(a)
 
 object Prop {
   type FailedCase = String
