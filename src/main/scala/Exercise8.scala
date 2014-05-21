@@ -72,12 +72,17 @@ trait RNG {
       }yield(l)
 
 
+    def unsized: SGen[A]  = SGen( _ => this)
 
- 
+
+
+    def listOf[A](g: Gen[A]): SGen[List[A]] = SGen((listOfNStatic(g)(_)))
+
   }
 
+  case class SGen[A](forSize: Int => Gen[A]){
+  }
 
-case class SGen[+A](forSize: Int => Gen[A]) 
 
   def boolean: Gen[Boolean] = Gen(map (((x:RNG) => x.nextInt):State[RNG,Int])  (_%2==0))
 
@@ -163,6 +168,7 @@ case class SGen[+A](forSize: Int => Gen[A])
       }yield(t)
 
 
+
 }
 
 
@@ -170,7 +176,7 @@ def genAToOptA[A](g:Gen[A]):Gen[Option[A]] = g map ((Some(_)))
 
 
 def genString(n:Int):Gen[String] = for{
-lnum <- listOfNStatic(Gen.choose(32,126)) (n)
+  lnum <- listOfNStatic(Gen.choose(32,126)) (n)
 } yield((lnum map (_.toChar)).mkString)
 
 
