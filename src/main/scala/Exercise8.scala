@@ -6,7 +6,13 @@ trait RNG {
   }
 
   def listOf[A](a: Gen[A]): Gen[List[A]]
-  def forAll[A](as:Gen[A]) (f : A => Boolean):Prop
+
+
+
+def buildMsg[A](s: A, e: Exception): String = 
+  s"test case: $s\n" +
+  s"generated an exception: ${e.getMessage}\n" +
+  s"stack trace:\n ${e.getStackTrace.mkString("\n")}"
 
   def flatMap[S,A,B](f: State[S,A])(g: A => State[S,B]): State[S,B] =
     rng => {
@@ -77,12 +83,30 @@ type TestCases = Int
 type FailedCase = String
 type SuccessCount = Int
 type Result = Option[(FailedCase, SuccessCount)] 
-abstract class Prop(run: (TestCases,RNG) => Result){
-  def && (p: Prop): Prop  
-  def check : Boolean
+case class Prop(run: (TestCases,RNG,tag:Char) => Result, ){
+  def && (p: Prop): Prop   = Prop((tc:TestCases, rng:RNG) => this.run(tc, rng. 'L') match{
+    case None => p.run(tc,rng.'R')
+    case report => report
+  })
+
+  def || (p: Prop): Prop   = Prop((tc:TestCases, rng:RNG) => this.run(tc, rng.'L') match{
+    case None => None
+    case report => p.run(tc,rng.'R')
+  })
+
+  // def check : Boolean
 }
 
-    
+  def forAll[A](as:Gen[A]) (f : A => Boolean):Prop 
+//  = Prop {
+//     (n,rng) => randomStream(as)(rng) .zip (Stream.from(0)).take(n).map{
+//       case (a,i) => try {
+//         if (f(a)) None else Some((a.toString, i))
+//       } catch { case e: Exception => Some ((buildMsg(a,e),i))}
+//     }.find(_.isDefined).getOrElse(None)
+//   }    
+
+
  
 //  def check: Either[(FailedCase, SuccessCount), SuccessCount]
 

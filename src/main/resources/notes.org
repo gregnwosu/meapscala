@@ -1055,3 +1055,23 @@ case class Gen[A](sample: State[RNG,A]){
 - because we are already in a function..... this creates our stateful computation
 - remember once you are inside the lambda the search is for createing the object INSIDE the functor
 
+*** implementing a Prop
+- randomStream generator from a gen (as) and a seed (rng)
+- zipp it with a stream starting from 0, that we will use as an index
+- map these over a matcher that tries to see what f(a) is
+  - True returns None
+  - False return a.String and index
+    - report similar if an exception is caught
+- searches the stream for Some() values using ifDefined 
+  - If Found reports the error String
+  - otherwise reports none
+#+BEGIN_SRC scala
+Prop {
+     (n,rng) => randomStream(as)(rng) .zip (Stream.from(0)).take(n).map{
+       case (a,i) => try {
+         if (f(a)) None else Some((a.toString, i))
+       } catch { case e: Exception => Some ((buildMsg(a,e),i))}
+     }.find(_.isDefined).getOrElse(None)
+   }
+
+#+END_SRC
