@@ -1,11 +1,9 @@
-abstract class Exercise8 {
+ class Exercise8 {
 
-trait RNG {
-  def nextInt: (Int, RNG)
-  def nextDouble: (Double, RNG)
-}
 
-  def listOf[A](a: Gen[A]): Gen[List[A]]
+  def listOf[A](g: Gen[A]): Gen[List[A]] = Gen(sequence (List.fill(100)(g.sample)))
+
+
 
   def buildMsg[A](s: A, e: Exception): String =
     s"test case: $s\n" +
@@ -29,6 +27,7 @@ trait RNG {
     rng => {
 
       def processRands(gs: List[State[S,A]])(rg:S):(List[A],S) = gs match {
+        
         case h::t => {
           val (lh,rng2) = h(rg)
           val (lt,rng3) = processRands(t)(rng2)
@@ -48,7 +47,6 @@ trait RNG {
 
 //GEN
   case class Gen[A](sample: State[RNG,A]){
-
     def flatMap[B](f: A => Gen[B]): Gen[B] = Gen((s:RNG) =>  {
       val (a,s1) = sample (s)
       val f2 = f(a).sample
@@ -56,7 +54,9 @@ trait RNG {
     })
 
     def map[B](f: A => B): Gen[B]  = this flatMap ((a:A) => Gen.unit(f(a)))
+
     def map2[B,C](rb:Gen[B])(f: (A,B)=>C): Gen[C] = flatMap ((a:A) => rb map  ((b:B) => f(a,b) ))
+
     def listOfN(size: Gen[Int]): Gen[List[A]] = size flatMap ((sz:Int)=>listOfNStatic(this)(sz))
 
 
@@ -67,7 +67,11 @@ trait RNG {
       l  <- listOfNStatic(this) (sz)
       }yield(l)
 
+
     def unsized: SGen[A]  = SGen( _ => this)
+
+
+
     def listOf[A](g: Gen[A]): SGen[List[A]] = SGen((listOfNStatic(g)(_)))
 
   }
@@ -77,6 +81,7 @@ trait RNG {
 
 
   def boolean: Gen[Boolean] = Gen(map (((x:RNG) => x.nextInt):State[RNG,Int])  (_%2==0))
+
   def listOfNStatic[A](g: Gen[A])(n: Int): Gen[List[A]]  = Gen(sequence (List.fill(n)(g.sample)))
 
 
@@ -87,14 +92,45 @@ trait RNG {
   type Result = Option[(FailedCase, SuccessCount)]
 
 
+case class Simple(seed: Long) extends RNG {
+      def nextInt: (Int, RNG) = {
+        val newSeed = (seed * 0x5DEECE66DL + 0xBL) & 0xFFFFFFFFFFFFL
+        val nextRNG = Simple(newSeed)
+        val n = (newSeed >>> 16).toInt
+        (n, nextRNG)
+      }
+
+     def nextDouble: (Double, RNG) = {
+        val newSeed = (seed * 0x5DEECE66DL + 0xBL) & 0xFFFFFFFFFFFFL
+        val nextRNG = Simple(newSeed)
+        val n = (newSeed >>> 16).toInt
+        (n, nextRNG)
+      }
+    }
+
+trait RNG {
+  def nextInt: (Int, RNG)
+  def nextDouble: (Double, RNG)
+
+
+}
+
+
+  
+def randomStream[A](g:Gen[A])(rng:RNG):Stream[A] = {
+    val (v,nextrng) = g.sample(rng)
+scala.collection.immutable.Stream.cons (v,(randomStream(g)(rng)))
+  }
+  
+
   def forAll[A](as:Gen[A]) (f : A => Boolean):Prop
-  //  = Prop {
-  //     (n,rng) => randomStream(as)(rng) .zip (Stream.from(0)).take(n).map{
-  //       case (a,i) => try {
-  //         if (f(a)) None else Some((a.toString, i))
-  //       } catch { case e: Exception => Some ((buildMsg(a,e),i))}
-  //     }.find(_.isDefined).getOrElse(None)
-  //   }
+    = Prop {
+       (max,n,rng,sd) => randomStream(as)(rng) .zip (Stream.from(0)).take(n).map{
+         case (a,i) => try {
+           if (f(a)) None else Some((a.toString, i))
+         } catch { case e: Exception => Some ((buildMsg(a,e),i))}
+       }.find(_.isDefined).getOrElse(None)
+     }
 
 
 
@@ -200,29 +236,54 @@ def genOptAToA[A](g:Gen[Option[A]]):Gen[A] = for {
 object Prop {
   type FailedCase = String
   type SuccessCount = Int
+
+
+def run( p: Prop, maxSize: Int = 100, testCases: Int = 100, rng: RNG =
+    Simple(System.currentTimeMillis), sd:Char='L'): Unit =
+    p.run(maxSize, testCases, rng, sd) match {
+      case Some((msg, n)) => println(s"! Falsified after $n passed tests:\n $msg") case None => println(s"+ OK, passed $testCases tests.") 
+    }
+
+
+
 }
 
 
 
-  type MaxSize = Int
-  case class Prop(run: (MaxSize,TestCases,RNG,Char) => Result ){
-    def && (p: Prop): Prop   = Prop((maxsz:MaxSize,tc:TestCases, rng:RNG, sd:Char) => this.run(maxsz, tc, rng,'L') match{
-      case None => p.run(maxsz,tc,rng,'R')
+type MaxSize = Int 
+
+
+val smallInt = Gen.choose(-10,10) 
+val maxProp = forAll(listOf(smallInt)) { 
+  (l) =>{
+    val max = l.max
+    !l.exists(_ > max) 
+  }
+}
+
+
+
+
+  case class Prop(run: (Int, TestCases,RNG, Char) => Result ){
+    def && (p: Prop): Prop   = Prop((numcases:Int, tc:TestCases, rng:RNG, tag:Char) => this.run(numcases, tc, rng, 'L') match{
+      case None => p.run(numcases,tc,rng,'R')
       case report => report
     })
 
-    def || (p: Prop): Prop   = Prop((maxsz:MaxSize,tc:TestCases, rng:RNG, sd:Char) => this.run(maxsz,tc, rng,'L') match{
+    def || (p: Prop): Prop   = Prop((numcases:Int, tc:TestCases, rng:RNG, tag:Char) => this.run(numcases, tc, rng,'L') match{
       case None => None
-      case report => p.run(maxsz,tc,rng,'R')
+      case report => p.run(numcases,tc,rng,'R')
     })
-}
+
+
+  // def check : Boolean
+  }
 
 
 
-def forAll[A](g: SGen[A])(f: A => Boolean): Prop = 
+  def forAll[A](g: SGen[A])(f: A => Boolean): Prop =
   forAll(g.forSize(_))(f)
-
-def forAll[A](g: Int => Gen[A])(f: A => Boolean): Prop = 
+  def forAll[A](g: Int => Gen[A])(f: A => Boolean): Prop =
   Prop { (max,n,rng,sd) =>  
     val casesPerSize = (n + (max - 1)) / max
     val props: Stream[Prop] = Stream.from(0).take((n min max) + 1).map(i => forAll(g(i))(f)) 
@@ -236,4 +297,29 @@ def forAll[A](g: Int => Gen[A])(f: A => Boolean): Prop =
 
 
 
+// case class Simple(seed: Long) extends RNG {
+//       def nextInt: (Int, RNG) = {
+//         val newSeed = (seed * 0x5DEECE66DL + 0xBL) & 0xFFFFFFFFFFFFL
+//         val nextRNG = Simple(newSeed)
+//         val n = (newSeed >>> 16).toInt
+//         (n, nextRNG)
+//       }
+//     }
+//Tests
+//val intList = Gen.listOf(Gen.choose(0,100))
+//val onesList = Gen.listOf(Gen.choose(1,1))
+//def sum (l:List[Int]):Int =  l . foldRight( 0) (_ + _)
+//val orderInvariant = forAll(intList) ( sum (l) == sum (l.reverse))
+//val sumLengthProp = forAll (onesList) (sum(l) == length(l))
+//maximum of list int
+//val orderInvariantProp = forAll(intList) ( max (l) == max (l.reverse))
+//val associativeProp = forAll(intList) (max (l) == max(  list(max(split(l, l.len/2)(0)) , max(split(l, l.len/2)(0)))))
+
+
+  def main(args: Array[String]):Unit  = { 
+    Prop.run(maxProp)
+  }
+
+
 }
+
