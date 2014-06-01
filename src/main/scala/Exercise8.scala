@@ -1,5 +1,3 @@
-
-
 object Exercise8 {
 
 
@@ -8,7 +6,7 @@ object Exercise8 {
    }
 
 
-  def listOf[A](g: Gen[A]): Gen[List[A]] = Gen(sequence (List.fill(100)(g.sample)))
+  def listOfGen[A](g: Gen[A]): Gen[List[A]] = Gen(sequence (List.fill(100)(g.sample)))
 
   def buildMsg[A](s: A, e: Exception): String =
     s"test case: $s\n" +
@@ -60,7 +58,7 @@ object Exercise8 {
 
     def map2[B,C](rb:Gen[B])(f: (A,B)=>C): Gen[C] = flatMap ((a:A) => rb map  ((b:B) => f(a,b) ))
 
-    def listOfN(size: Gen[Int]): Gen[List[A]] = size flatMap ((sz:Int)=>listOfNStatic(this)(sz))
+    def listOf(size: Gen[Int]): Gen[List[A]] = size flatMap ((sz:Int)=>listOfNStatic(this)(sz))
 
 
     //aha now we have flatmap
@@ -75,13 +73,16 @@ object Exercise8 {
 
 
 
-    def listOf[A](g: Gen[A]): SGen[List[A]] = SGen((listOfNStatic(g)(_)))
+
 
   }
 
    case class SGen[A](forSize: Int => Gen[A]){
+
   }
 
+
+  
 
    def boolean: Gen[Boolean] = Gen(map (((x:RNG) => x.nextInt):State[RNG,Int])  (_%2==0))
 
@@ -124,14 +125,14 @@ object Exercise8 {
    }
 
 
-   def forAll[A](as:Gen[A]) (f : A => Boolean):Prop
-   = Prop {
-     (max,n,rng,sd) => randomStream(as)(rng) .zip (Stream.from(0)).take(n).map{
-       case (a,i) => try {
-         if (f(a)) None else Some((a.toString, i))
-       } catch { case e: Exception => Some ((buildMsg(a,e),i))}
-     }.find(_.isDefined).getOrElse(None)
-   }
+   // def forAll[A](as:Gen[A]) (f : A => Boolean):Prop
+   // = Prop {
+   //   (max,n,rng,sd) => randomStream(as)(rng) .zip (Stream.from(0)).take(n).map{
+   //     case (a,i) => try {
+   //       if (f(a)) None else Some((a.toString, i))
+   //     } catch { case e: Exception => Some ((buildMsg(a,e),i))}
+   //   }.find(_.isDefined).getOrElse(None)
+   // }
 
 
 
@@ -251,12 +252,11 @@ object Exercise8 {
 
 
   val smallInt = Gen.choose(-10,10)
-   val maxProp = forAll(listOf(smallInt)) {
-     (l) =>{
+  val maxProp = forAll(listOf(smallInt) ) ({ (l) =>{
        val max = l.max
        !l.exists(_ > max)
      }
-   }
+   })
 
 
 
@@ -273,20 +273,28 @@ object Exercise8 {
      })
 
 
+
+
+
      // def check : Boolean
    }
 
 
-
-   def forAll[A](g: SGen[A])(f: A => Boolean): Prop =
-     forAll(g.forSize(_))(f)
-   def forAll[A](g: Int => Gen[A])(f: A => Boolean): Prop =
+  def listOf[A](g: Gen[A]): SGen[List[A]] = SGen((n:Int)=>Gen(sequence (List.fill(n)(g.sample))))
+  def forAll[A](g: Int => Gen[A])(f: A => Boolean): Prop =
      Prop { (max,n,rng,sd) =>
        val casesPerSize = (n + (max - 1)) / max
-       val props: Stream[Prop] = Stream.from(0).take((n min max) + 1).map(i => forAll(g(i))(f))
-       val prop: Prop = props.map(p => Prop { (max, _, rng,sd) => p.run(max, casesPerSize, rng,sd) }).toList.reduce(_ && _)
-       prop.run(max,n,rng,sd)
+       val props: Stream[Prop] = Stream.from(0).take((n min max) + 1).map(i => forAll(SGen((x => g(x)))  )(f))
+       val prop:Prop = props.map(p => Prop ( (max, _, rng,sd) => p.run(max, casesPerSize, rng,sd) )).toList.reduce(_ && _)
+       prop run(max,n,rng,sd)
      }
+
+
+  def forAll[A](g: SGen[A])(f: A => Boolean): Prop =
+       forAll(g.forSize(_))(f)
+
+
+  
 
 
 
