@@ -1,0 +1,94 @@
+<<<<<<< HEAD
+#+BLOG: wordpress
+#+POSTID: 39
+=======
+>>>>>>> e87f93c29cf6c253a7390d6ce4ac1ac8c6cc31e1
+#+DATE: [2014-04-27 Sun 16:58]
+#+OPTIONS: toc:nil num:nil todo:nil pri:nil tags:nil ^:nil TeX:nil
+#+CATEGORY: neural networks, haskell, concurrency, functional programming
+#+TAGS:
+#+DESCRIPTION:
+#+TITLE: Meap Scala Notes
+
+<<<<<<< HEAD
+
+* Scala
+** github
+https://github.com/gregnwosu/meapscala
+** syntax 
+*** functional traits						      :drill:
+- interfaces for functions
+- we introduce data types with [traits]
+**** sealed trait
+- sealed means that all implentations must be in this file, kinda the same as [dinal]
+***  other syntax quirks					      :drill:
+- each anonymous function has a implicit [apply] method that exposes the interface or [trait] of the function
+- the function apply means that a function object can be called implicitly
+- square brackets with capitals signify [generics]/[polymorphic] functions
+- remember that anonymous functions should be wrapped in [brackets] and can name arguments only at [top] level
+- note that applying 1 function after another requires repeated use of [brackets]
+
+#+BEGIN_SRC scala
+def uncurry[A,B,C](f: A => B=> C): (A,B)=>C =
+(a:A,b:B) => f (a) (b)
+#+END_SRC
+
+*** data constructors						      :drill:
+- varying forms use the case statement
+  - think overloading constructors
+- are made by [extend]ing the trait
+- each data constructor introduces a pattern
+*** collections
+
+**** lists
+- lists can be made [polymorphic] with square brackets
+- adding a + makes the list [covariant]
+- We defined Nil to extend List[Nothing]
+  - Nothing mathes all types
+  - Therefore because list is covarient
+    - Nil has a type [List[A]] for any A
+   
+*****  Variadic functions 					      :drill:
+what does _* mean? 
+#+BEGIN_SRC scala
+//recursively applies cons
+def apply[A](as: A*): List[A] =
+  if (as.isEmpty) Nil
+  else Cons(as.head, apply(as.tail: _*))
+}
+#+END_SRC
+
+****** The Answer
+- * is just syntatic sugar for a Seq which are lists or array like structures passed around instead of variable arguments
+- as is bound to Seq[A] http://mng.bz/f4k9
+- _~* allows us to pass a Seq to a varargs method,
+  - a bit like pythonic **
+***** covariance
+- generally if X is a subtype of Y then 
+  - List[X] is a subtupe of List[Y]
+
+***** companion objects
+- has the same [name] as our data type
+- also has [convience] functions
+**** constructor quirks 					      :drill:
+why is Nil defined with object a and list defined via class
+***** TODO The Answer
+
+**** pattern matching
+- _ matches any value
+#+BEGIN_SRC scala
+
+def sum(ints:List[Int]):Int = ints match {
+case Nil => 0
+case Cons(x,xs) => x + sum(xs)
+}
+
+#+END_SRC
+
+
+***** syntatical quirks						      :drill:
+- need the ints for the match clause 
+      -called the [target] or [scrutinee]
+- case statements
+=======
+>>>>>>> e87f93c29cf6c253a7390d6ce4ac1ac8c6cc31e1
