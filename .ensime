@@ -22,19 +22,19 @@
       )
       :test-deps (
         "/home/greg/.sbt/boot/scala-2.10.3/lib/scala-library.jar"
-        "/home/greg/dev/scala/myproject/target/scala-2.10/classes"
-        "/home/greg/dev/scala/myproject/target/scala-2.10/test-classes"
+        "/home/greg/dev/scala/meapscala/target/scala-2.10/classes"
+        "/home/greg/dev/scala/meapscala/target/scala-2.10/test-classes"
       )
       :source-roots (
-        "/home/greg/dev/scala/myproject/src/main/scala"
-        "/home/greg/dev/scala/myproject/src/main/java"
-        "/home/greg/dev/scala/myproject/target/scala-2.10/src_managed/main"
-        "/home/greg/dev/scala/myproject/src/test/scala"
-        "/home/greg/dev/scala/myproject/src/test/java"
-        "/home/greg/dev/scala/myproject/target/scala-2.10/src_managed/test"
+        "/home/greg/dev/scala/meapscala/src/main/scala"
+        "/home/greg/dev/scala/meapscala/src/main/java"
+        "/home/greg/dev/scala/meapscala/target/scala-2.10/src_managed/main"
+        "/home/greg/dev/scala/meapscala/src/test/scala"
+        "/home/greg/dev/scala/meapscala/src/test/java"
+        "/home/greg/dev/scala/meapscala/target/scala-2.10/src_managed/test"
       )
-      :target "/home/greg/dev/scala/myproject/target/scala-2.10/classes"
-      :test-target "/home/greg/dev/scala/myproject/target/scala-2.10/test-classes"
+      :target "/home/greg/dev/scala/meapscala/target/scala-2.10/classes"
+      :test-target "/home/greg/dev/scala/meapscala/target/scala-2.10/test-classes"
     )
   )
 )
